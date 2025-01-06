@@ -53,9 +53,9 @@ ENDWHILE</code></pre>
 ENDWHILE</code></pre>
 
 <h3><strong>FOR</strong></h3>
-<pre><code>FOR &lt;iterator&gt; &lt;- &lt;start&gt; TO &lt;end&gt; (also support FOR &lt;iterator&gt; = &lt;start&gt; TO &lt;end&gt;)
+<pre><code>FOR &lt;identifier&gt; &lt;- &lt;value1&gt; TO &lt;value2&gt; (also support FOR &lt;identifier&gt; = &lt;value1&gt; TO &lt;value2&gt;)
    &lt;statements&gt;
-NEXT &lt;iterator&gt;</code></pre>
+NEXT &lt;identifier&gt;</code></pre>
 <p><strong>Example:</strong></p>
 <pre><code>FOR i &lt;- 1 TO 5
    OUTPUT i
