@@ -1,0 +1,60 @@
+body {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #1e1e1e; /* Dark background */
+    color: #f8f8f2; /* Light text */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    width: 80%;
+    max-width: 1200px;
+    border: 1px solid #44475a; /* Darker border */
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+h1 {
+    text-align: center;
+    color: #50fa7b; /* Greenish title */
+}
+
+.textboxes {
+    display: flex; /* Align text boxes side by side */
+}
+
+.textbox {
+    width: 50%; /* Each textbox takes half the width */
+    padding: 10px;
+    border: none;
+    outline: none;
+    font-size: 16px;
+}
+
+.input-box {
+    background-color: #282a36; /* Darker input area */
+    color: #ffffff; /* White text for input box */
+}
+
+.output-box {
+    background-color: #21222c; /* Even darker output area */
+    color: #ffffff; /* White text for output box */
+}
+
+button {
+    padding: 10px 20px;
+    margin-top: 10px;
+    cursor: pointer;
+    background-color: #bd93f9; /* Purple button */
+    color: #fff; /* White text */
+    border: none;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #ff79c6; /* Pink hover effect */
+}
