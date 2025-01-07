@@ -149,8 +149,9 @@ class PseudoInterpreter {
             const match = line.match(/^SET\s+([\w\[\]<>\-,\+\*/%]+)\s+TO\s+(.+)$/);
             return ["SET", match[1], match[2]];
         } else if (line.startsWith("OUTPUT")) {
-            const match = line.match(/^OUTPUT ([\w\[\]<>\-,]+)$/);
-            const args = match[1].split(', ').map(arg => arg.trim());
+            const match = line.match(/^OUTPUT\s+((?:"[^"]*"|[\w\[\]<>\-,]+)(?:,\s+(?:"[^"]*"|[\w\[\]<>\-,]+))*)$/);
+            const args = match[1].split(/,\s+/).map(arg => arg.trim());
+            console.log(["OUTPUT", args]);
             return ["OUTPUT", args];
         } else if (line.startsWith("INPUT")) {
             const match = line.match(/^INPUT (\w+)$/);
@@ -246,6 +247,10 @@ class PseudoInterpreter {
         // Replace NOT with !
         expr = expr.replace(/NOT/g, '!');
 
+        // Replace Booleans
+        expr = expr.replace(/TRUE/g, 'true');
+        expr = expr.replace(/FALSE/g, 'false');
+
         /*
         // Handle CALL expression for function calls
         if (expr.startsWith("CALL")) {
@@ -314,8 +319,11 @@ class PseudoInterpreter {
     }
 
     removeQuotationMark(expr) {
-        expr_string = toString(expr);
+        let expr_string = String(expr);
+        // console.log("removeQuotationMark");
+        // console.log(expr_string);
         if (expr_string.startsWith('"') && expr_string.endsWith('"')) {
+            // console.log(expr_string.slice(1, -1));
             return expr_string.slice(1, -1);
         } else {
             return expr;
@@ -433,7 +441,7 @@ class PseudoInterpreter {
                     const outputArgs = token[1]; // This is now an array of arguments
                     // console.log(token[1][0]);
                     // console.log(this.evalExpression(token[1][0]));
-                    const outputValue = outputArgs.map(arg => this.turnBooleanCapitalized(this.evalExpression(arg))).join(''); // Concatenate evaluated values
+                    const outputValue = outputArgs.map(arg => this.turnBooleanCapitalized(this.removeQuotationMark(this.evalExpression(arg)))).join(''); // Concatenate evaluated values
                     document.getElementById('outputBox').value += outputValue + '\n'; // Output to text box
                     // console.log(outputValue); // Output to console
                     break;
@@ -694,11 +702,3 @@ function runPseudocode() {
         alert('Error during execution:\n' + error.message);
     }
 }
-
-
-
-
-
-
-
-
