@@ -78,5 +78,16 @@ ENDCASE</code></pre>
     OTHERWISE : OUTPUT "Score out of range"
 ENDCASE</code></pre>
 
+<h3><strong>REPEAT-UNTIL</strong></h3>
+<pre><code>REPEAT
+    &lt;statements&gt;
+UNTIL &lt;condition&gt;</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>count &lt;- 0
+REPEAT
+    OUTPUT count
+    count &lt;- count + 1
+UNTIL count = 5</code></pre>
+
 </body>
 </html>
