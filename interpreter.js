@@ -210,10 +210,15 @@ class PseudoInterpreter {
             const match = line.match(/^(.*?)\s*TO\s*(.*?)\s*:\s*(.*)/);
             return ["RANGE_CASE", match[1].trim(), match[2].trim(), match[3].trim()];
         } else if (/^\S+\s*:\s*/.test(line)) {
-           const match = line.match(/^(.*?)\s*:\s*(.*)/);
-           return ["CASE_VALUE", match[1].trim(), match[2].trim()];
+            const match = line.match(/^(.*?)\s*:\s*(.*)/);
+            return ["CASE_VALUE", match[1].trim(), match[2].trim()];
         } else if (line === "ENDCASE") {
-            return ["ENDCASE"]; // Capture end of case statement
+            return ["ENDCASE"];
+        } else if (line === "REPEAT") {
+            return ["REPEAT"];
+        } else if (/^UNTIL\s+(.*)$/.test(line)) {
+            const match = line.match(/^UNTIL\s+(.*)$/);
+            return ["UNTIL", match[1]];
         }
     
        throw new SyntaxError(`Unknown command: ${line}`);
@@ -456,17 +461,47 @@ class PseudoInterpreter {
                 return this.evalExpression(token[1]);
 
             case "WHILE":
-                const startIndex = i;
-                const loopCondition = token[1];
+                let loopCondition = token[1];
+                let whileCount = 1;
                 i++;
-                const loopBody = [];
-                while (parsedCode[i][0] !== "ENDWHILE") {
-                loopBody.push(parsedCode[i]);
-                i++;
+                let loopBody = [];
+                while (parsedCode[i][0] !== "ENDWHILE" && whileCount === 1) {
+                    if (parsedCode[i][0] === 'WHILE') {
+                        whileCount++;
+                    }
+                    if (parsedCode[i][0] === 'ENDWHILE') {
+                        whileCount--;
+                    }
+                    loopBody.push(parsedCode[i]);
+                    i++;
                 }
                 while (this.evalExpression(loopCondition)) {
-                this.execute(loopBody);
+                    this.execute(loopBody);
                 }
+                break;
+
+            case "REPEAT":
+                var repeatCondition;
+                let repeatCount = 1;
+                i++;
+                let repeatBody = [];
+                while (parsedCode[i][0] !== "UNTIL" && repeatCount === 1) {
+                    if (parsedCode[i][0] === 'REPEAT') {
+                        repeatCount++;
+                    }
+                    if (parsedCode[i][0] === 'UNTIL') {
+                        repeatCount--;
+                    }
+                    repeatBody.push(parsedCode[i]);
+                    i++;
+                }
+                repeatCondition = parsedCode[i][1];
+                do {
+                    this.execute(repeatBody);
+                } while (!this.evalExpression(repeatCondition));
+                break;
+            
+            case "UNTIL":
                 break;
 
             case "FOR":
