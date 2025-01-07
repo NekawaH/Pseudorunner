@@ -1,6 +1,8 @@
 class PseudoInterpreter {
     constructor() {
         this.variables = {};
+        this.arrays = {};
+        this.procedures = {};
         this.functions = {};
         this.ifCountTracker = 0;
         this.elseIfTracker = [0];
@@ -137,18 +139,18 @@ class PseudoInterpreter {
         
 
     tokenize(line) {
-        if (/^\w+\s*<-.*$/.test(line)) {
-            const match = line.match(/^(\w+)\s*<- (.+)$/);
+        if (/^([\w\[\]<>\-,\+\*/%]+)\s*<- (.+)$/.test(line)) {
+            const match = line.match(/^([\w\[\]<>\-,\+\*/%]+)\s*<- (.+)$/);
             return ["SET", match[1], match[2]];
-        } else if (/^\w+\s*=.*$/.test(line)) {
-            const match = line.match(/^(\w+)\s*= (.+)$/);
+        } else if (/^([\w\[\]<>\-,\+\*/%]+)\s*= (.+)$/.test(line)) {
+            const match = line.match(/^([\w\[\]<>\-,\+\*/%]+)\s*= (.+)$/);
             return ["SET", match[1], match[2]];
-        } else if (/^SET\s+(\w+)\s+TO\s+(.+)$/.test(line)) {
-            const match = line.match(/^SET\s+(\w+)\s+TO\s+(.+)$/);
+        } else if (/^SET\s+([\w\[\]<>\-,\+\*/%]+)\s+TO\s+(.+)$/.test(line)) {
+            const match = line.match(/^SET\s+([\w\[\]<>\-,\+\*/%]+)\s+TO\s+(.+)$/);
             return ["SET", match[1], match[2]];
         } else if (line.startsWith("OUTPUT")) {
-            const match = line.match(/^OUTPUT (.+)$/);
-            const args = match[1].split(',').map(arg => arg.trim());
+            const match = line.match(/^OUTPUT ([\w\[\]<>\-,]+)$/);
+            const args = match[1].split(', ').map(arg => arg.trim());
             return ["OUTPUT", args];
         } else if (line.startsWith("INPUT")) {
             const match = line.match(/^INPUT (\w+)$/);
@@ -191,11 +193,11 @@ class PseudoInterpreter {
             return ["WHILE", match[1]];
         } else if (line === "ENDWHILE") {
             return ["ENDWHILE"];
-        } else if (/^FOR (\w+)\s*<-?\s*(\w+|\d+)\s*TO\s*(\w+|\d+)$/.test(line)) {
-            const match = line.match(/^FOR (\w+)\s*<-?\s*(\w+|\d+)\s*TO\s*(\w+|\d+)$/);
+        } else if (/^FOR (\w+)\s*<-?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/.test(line)) {
+            const match = line.match(/^FOR (\w+)\s*<-?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/);
             return ["FOR", match[1], match[2], match[3]];
-        } else if (/^FOR (\w+)\s*=?\s*(\w+|\d+)\s*TO\s*(\w+|\d+)$/.test(line)) {
-            const match = line.match(/^FOR (\w+)\s*=?\s*(\w+|\d+)\s*TO\s*(\w+|\d+)$/);
+        } else if (/^FOR (\w+)\s*=?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/.test(line)) {
+            const match = line.match(/^FOR (\w+)\s*=?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/);
             return ["FOR", match[1], match[2], match[3]];
         } else if (line.startsWith("NEXT")) {
             const match = line.match(/^NEXT (\w+)$/);
@@ -219,7 +221,13 @@ class PseudoInterpreter {
         } else if (/^UNTIL\s+(.*)$/.test(line)) {
             const match = line.match(/^UNTIL\s+(.*)$/);
             return ["UNTIL", match[1]];
-        }
+        } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
+            const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
+            return ["DECLARE_ARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], match[4]];
+        } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
+            const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
+            return ["DECLARE_2D_ARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], [parseInt(match[4], 10), parseInt(match[5], 10)], match[6]];
+        }        
     
        throw new SyntaxError(`Unknown command: ${line}`);
     }
@@ -235,6 +243,10 @@ class PseudoInterpreter {
         // Replace OR with ||
         expr = expr.replace(/OR/g, '||');
 
+        // Replace NOT with !
+        expr = expr.replace(/NOT/g, '!');
+
+        /*
         // Handle CALL expression for function calls
         if (expr.startsWith("CALL")) {
             const match = expr.match(/^CALL (\w+)\((.*)\)$/);
@@ -254,16 +266,45 @@ class PseudoInterpreter {
                 throw new Error(`${arrayName} is not an array or is not defined.`);
             }
         }
+        */
 
+        
         // Handle strings
         if (expr.startsWith('"') && expr.endsWith('"')) {
-            return expr.slice(1, -1);
+            return expr;
+            //return expr.slice(1, -1);
+        }
+        
+        // Handle Boolean
+        if (expr === "TRUE") {
+            return true;
+        }
+        if (expr === "FALSE") {
+            return false;
         }
 
         // Replace variables in the expression with their values
         expr = expr.replace(/\b\w+\b/g, (match) => {
             return this.variables[match] !== undefined ? this.variables[match] : match;
         });
+
+        // Regular expression to match 1D and 2D array references
+        const arrayPattern = /([A-Za-z]+)\[(.+?)(?:,(\S+))?\]/g;
+
+        // Function to replace array references with their evaluated values
+        const replaceArrayReferences = (match, arrayName, index1, index2) => {
+            if (index2 !== undefined) { // 2D array reference
+                index1 = this.evalExpression(index1);
+                index2 = this.evalExpression(index2);
+                return this.evalArray(`${arrayName}[${this.evalExpression(index1)},${index2}]`);
+            } else { // 1D array reference
+                index1 = this.evalExpression(index1);
+                return this.evalArray(`${arrayName}[${index1}]`);
+            }
+        };
+
+        // Replace all array references in the expression
+        expr = expr.replace(arrayPattern, replaceArrayReferences);
 
         try {
             return eval(expr); // Evaluate mathematical and logical expressions
@@ -272,6 +313,29 @@ class PseudoInterpreter {
         }
     }
 
+    removeQuotationMark(expr) {
+        expr_string = toString(expr);
+        if (expr_string.startsWith('"') && expr_string.endsWith('"')) {
+            return expr_string.slice(1, -1);
+        } else {
+            return expr;
+        }
+    }
+
+    turnBooleanCapitalized(expr) {
+        if (typeof expr === "boolean") {
+            if (expr) return "TRUE";
+            else return "FALSE";
+        }
+        if (expr === 'true') {
+            return "TRUE";
+        }
+        if (expr === 'false') {
+            return "FALSE";
+        }
+        return expr;
+    }
+    
     handleForLoop(parsedCode, i, varName, startVar, endVar) {
         // Handle a FOR loop and any nested loops.
         let forIndex = i;
@@ -315,6 +379,36 @@ class PseudoInterpreter {
         return loopI;
     }
 
+    evalArray(expr) {
+        const pattern1 = /^(.*)\[(.+?)\]$/;
+        const pattern2 = /^(.*)\[(.+?),(.+?)\]$/;
+        let match;
+        if (pattern1.test(expr)) { // 1D array
+            match = expr.match(pattern1);
+            return this.arrays[match[1]][this.evalExpression(match[2])]
+        } else if (pattern2.test(expr)) { // 2D array
+            match = expr.match(pattern2);
+            return this.arrays[match[1]][this.evalExpression(match[2])][this.evalExpression(match[3])]
+        } else {
+            return expr;
+        }
+    }
+
+    parseReference(expr) {
+        const pattern1 = /^(.*)\[(.+?)\]$/;
+        const pattern2 = /^(.*)\[(.+?),(.+?)\]$/;
+        let match;
+        if (pattern1.test(expr)) { // 1D array
+            match = expr.match(pattern1);
+            return [match[1],this.evalExpression(match[2])]
+        } else if (pattern2.test(expr)) { // 2D array
+            match = expr.match(pattern2);
+            return [match[1],this.evalExpression(match[2]),this.evalExpression(match[3])]
+        } else {
+            return [expr];
+        }
+    }
+
     execute(parsedCode) {
         let i = 0;
     
@@ -323,21 +417,33 @@ class PseudoInterpreter {
 
             switch (token[0]) {
                 case "SET":
-                    this.variables[token[1]] = this.evalExpression(token[2]);
+                    // console.log(token[1]);
+                    // console.log(token[2]);
+                    let ref = this.parseReference(token[1]);
+                    if (ref.length === 1) {
+                        this.variables[ref[0]] = this.evalExpression(token[2]);
+                    } else if (ref.length === 2) {
+                        this.arrays[ref[0]][ref[1]] = this.evalExpression(token[2]);
+                    } else if (ref.length === 3) {
+                        this.arrays[ref[0]][ref[1]][ref[2]] = this.evalExpression(token[2]);
+                    }
                     break;
         
                 case "OUTPUT":
                     const outputArgs = token[1]; // This is now an array of arguments
-                    const outputValue = outputArgs.map(arg => this.evalExpression(arg)).join(''); // Concatenate evaluated values
+                    // console.log(token[1][0]);
+                    // console.log(this.evalExpression(token[1][0]));
+                    const outputValue = outputArgs.map(arg => this.turnBooleanCapitalized(this.evalExpression(arg))).join(''); // Concatenate evaluated values
                     document.getElementById('outputBox').value += outputValue + '\n'; // Output to text box
-                    console.log(outputValue); // Output to console
+                    // console.log(outputValue); // Output to console
                     break;
         
                 case "INPUT":
                     const inputVal = prompt(`Enter value for ${token[1]}:`);
                     this.variables[token[1]] = isNaN(inputVal) ? inputVal : Number(inputVal);
                     break;
-        
+                
+                /*
                 case "APPEND":
                     if (!Array.isArray(this.variables[token[1]])) {
                     throw new Error(`${token[1]} is not an array.`);
@@ -355,6 +461,7 @@ class PseudoInterpreter {
                 case "LEN":
                     console.log(this.evalExpression(`LEN(${token[1]})`));
                     break;
+                */
 
                 case "IF":
                     const condition = this.evalExpression(token[1]);
@@ -435,86 +542,106 @@ class PseudoInterpreter {
                     }
                     break;
                 
-            case "ELSE":
-                break;        
+                case "ELSE":
+                    break;        
 
-            case "ENDIF":
-                break;
-
-            case "DEFINE":
-                const funcName = token[1];
-                const params = token[2];
-                const funcBody = [];
-                i++;
-                while (parsedCode[i][0] !== "ENDDEFINE") {
-                funcBody.push(parsedCode[i]);
-                i++;
-                }
-                this.functions[funcName] = { params, funcBody };
-                break;
-
-            case "CALL":
-                this.callFunction(token[1], token[2].map((arg) => this.evalExpression(arg)));
-                break;
-
-            case "RETURN":
-                return this.evalExpression(token[1]);
-
-            case "WHILE":
-                let loopCondition = token[1];
-                let whileCount = 1;
-                i++;
-                let loopBody = [];
-                while (parsedCode[i][0] !== "ENDWHILE" && whileCount === 1) {
-                    if (parsedCode[i][0] === 'WHILE') {
-                        whileCount++;
-                    }
-                    if (parsedCode[i][0] === 'ENDWHILE') {
-                        whileCount--;
-                    }
-                    loopBody.push(parsedCode[i]);
-                    i++;
-                }
-                while (this.evalExpression(loopCondition)) {
-                    this.execute(loopBody);
-                }
-                break;
-
-            case "REPEAT":
-                var repeatCondition;
-                let repeatCount = 1;
-                i++;
-                let repeatBody = [];
-                while (parsedCode[i][0] !== "UNTIL" && repeatCount === 1) {
-                    if (parsedCode[i][0] === 'REPEAT') {
-                        repeatCount++;
-                    }
-                    if (parsedCode[i][0] === 'UNTIL') {
-                        repeatCount--;
-                    }
-                    repeatBody.push(parsedCode[i]);
-                    i++;
-                }
-                repeatCondition = parsedCode[i][1];
-                do {
-                    this.execute(repeatBody);
-                } while (!this.evalExpression(repeatCondition));
-                break;
-            
-            case "UNTIL":
-                break;
-
-            case "FOR":
-                var varName = token[1];
-                var start = token[2];
-                var end = token[3];
-                i = this.handleForLoop(parsedCode, i, varName, start, end);
+                case "ENDIF":
+                    break;
                 
-            case "NEXT":
-                break;
+                /*
+                case "DEFINE":
+                    const funcName = token[1];
+                    const params = token[2];
+                    const funcBody = [];
+                    i++;
+                    while (parsedCode[i][0] !== "ENDDEFINE") {
+                    funcBody.push(parsedCode[i]);
+                    i++;
+                    }
+                    this.functions[funcName] = { params, funcBody };
+                    break;
 
-            default:
-                throw new SyntaxError(`Unknown command: ${token[0]}`);
+                case "CALL":
+                    this.callFunction(token[1], token[2].map((arg) => this.evalExpression(arg)));
+                    break;
+
+                case "RETURN":
+                    return this.evalExpression(token[1]);
+                */
+
+                case "WHILE":
+                    let loopCondition = token[1];
+                    let whileCount = 1;
+                    i++;
+                    let loopBody = [];
+                    while (parsedCode[i][0] !== "ENDWHILE" && whileCount === 1) {
+                        if (parsedCode[i][0] === 'WHILE') {
+                            whileCount++;
+                        }
+                        if (parsedCode[i][0] === 'ENDWHILE') {
+                            whileCount--;
+                        }
+                        loopBody.push(parsedCode[i]);
+                        i++;
+                    }
+                    while (this.evalExpression(loopCondition)) {
+                        this.execute(loopBody);
+                    }
+                    break;
+
+                case "REPEAT":
+                    var repeatCondition;
+                    let repeatCount = 1;
+                    i++;
+                    let repeatBody = [];
+                    while (parsedCode[i][0] !== "UNTIL" && repeatCount === 1) {
+                        if (parsedCode[i][0] === 'REPEAT') {
+                            repeatCount++;
+                        }
+                        if (parsedCode[i][0] === 'UNTIL') {
+                            repeatCount--;
+                        }
+                        repeatBody.push(parsedCode[i]);
+                        i++;
+                    }
+                    repeatCondition = parsedCode[i][1];
+                    do {
+                        this.execute(repeatBody);
+                    } while (!this.evalExpression(repeatCondition));
+                    break;
+                
+                case "UNTIL":
+                    break;
+
+                case "FOR":
+                    var varName = token[1];
+                    var start = token[2];
+                    var end = token[3];
+                    console.log(varName);
+                    console.log(start);
+                    console.log(end);
+                    start = this.evalExpression(start);
+                    end = this.evalExpression(end);
+                    console.log(start);
+                    console.log(end);
+                    i = this.handleForLoop(parsedCode, i, varName, start, end);
+                    
+                case "NEXT":
+                    break;
+
+                case "DECLARE_ARRAY":
+                    this.arrays[token[1]] = [];
+                    break;
+                
+                case "DECLARE_2D_ARRAY":
+                    this.arrays[token[1]] = [];
+                    for (let i = 0; i < 114514; i++) {
+                        this.arrays[token[1]][i] = [];
+                    }
+                    break;
+
+                default:
+                    throw new SyntaxError(`Unknown command: ${token[0]}`);
             }
 
             i++; 
@@ -561,127 +688,15 @@ function runPseudocode() {
     try {
         const interpreter = new PseudoInterpreter();
         const parsedCode = interpreter.parse(pseudocodeInput);
+        console.log(parsedCode);
         interpreter.execute(parsedCode);
     } catch (error) {
         alert('Error during execution:\n' + error.message);
     }
 }
 
-// Function to handle indentation and backspace behavior
-function handleIndentation(event) {
-    const inputBox = document.getElementById('inputBox');
-    const start = inputBox.selectionStart;
-    const end = inputBox.selectionEnd;
 
-    // Check if Tab key or Enter key is pressed
-    if (event.key === 'Tab') {
-        event.preventDefault(); // Prevent default tab behavior
-        const indent = '    '; // 4 spaces for indentation
-        const selectedText = inputBox.value.substring(start, end);
 
-        if (event.shiftKey) {
-            // Shift + Tab: Unindent entire lines of selected text
-            const lines = inputBox.value.split('\n');
-            const startLineIndex = inputBox.value.substr(0, start).split('\n').length - 1;
-            const endLineIndex = inputBox.value.substr(0, end).split('\n').length - 1;
-
-            let newStart = start; // Variable to track new cursor position
-
-            // Unindent each line in the selection range
-            for (let i = startLineIndex; i <= endLineIndex; i++) {
-                if (lines[i].startsWith(indent)) {
-                    lines[i] = lines[i].substring(indent.length); // Remove 4 spaces
-                    newStart -= indent.length; // Adjust cursor position for each unindented line
-                }
-            }
-
-            // Update the text area with unindented lines
-            inputBox.value = lines.join('\n');
-            // Move cursor to the position after unindentation
-            inputBox.selectionStart = inputBox.selectionEnd = Math.max(newStart, 0); // Ensure cursor doesn't go negative
-        } else {
-            // Tab: Indent selected lines
-            const indentedText = selectedText.split('\n').map(line => indent + line).join('\n');
-            inputBox.setRangeText(indentedText, start, end, 'select');
-            // Move cursor to the position after indentation
-            inputBox.selectionStart = inputBox.selectionEnd = start + indent.length;
-        }
-    } else if (event.key === 'Enter') {
-        event.preventDefault(); // Prevent default new line behavior
-        
-        const lines = inputBox.value.split('\n');
-        const currentLineIndex = inputBox.value.substr(0, start).split('\n').length - 1;
-
-        if (currentLineIndex >= 0) {
-            const currentLine = lines[currentLineIndex];
-            const indentationMatch = currentLine.match(/^(\s*)/); // Get leading whitespace
-
-            if (indentationMatch) {
-                const indentation = indentationMatch[0]; // Leading whitespace of current line
-                
-                // Insert a new line with the same indentation as current line
-                const newLineContent = '\n' + indentation;
-                inputBox.setRangeText(newLineContent, start, end, 'select');
-
-                // Move cursor to position after new line and indentation
-                inputBox.selectionStart = inputBox.selectionEnd = start + indentation.length + 1; 
-            } else {
-                // If there's no indentation in current line, just insert a new line
-                inputBox.setRangeText('\n', start, end, 'select');
-
-                // Move cursor to position after new line
-                inputBox.selectionStart = inputBox.selectionEnd = start + 1;
-            }
-        }
-    } else if (event.key === 'Backspace') {
-        event.preventDefault(); // Prevent default backspace behavior
-
-        if (start > 0) { 
-            const currentLineStartIndex = inputBox.value.lastIndexOf('\n', start - 1) + 1;
-            const leadingSpaces = inputBox.value.substring(currentLineStartIndex, start);
-            
-            if (/^ *$/.test(leadingSpaces)) { // Check if all characters before cursor are spaces
-                const spaceCount = leadingSpaces.length;
-                
-                // Calculate how many spaces to remove to reach the nearest multiple of 4.
-                const spacesToRemove = spaceCount % 4 || Math.min(spaceCount, 4);
-
-                // Update value by removing calculated spaces.
-                const updatedValue =
-                    inputBox.value.substring(0, currentLineStartIndex) +
-                    leadingSpaces.substring(0, spaceCount - spacesToRemove) +
-                    inputBox.value.substring(start);
-                
-                inputBox.value = updatedValue;
-
-                // Move cursor to the new position after removing spaces.
-                inputBox.selectionStart = inputBox.selectionEnd = currentLineStartIndex + spaceCount - spacesToRemove;
-                return; 
-            }
-        }
-
-        // If not all spaces or at the beginning of line, perform default backspace behavior.
-        const selectedTextLength = end - start;
-        if (selectedTextLength > 0) {
-            // Delete selected text
-            inputBox.setRangeText('', start, end, 'select');
-            inputBox.selectionStart = inputBox.selectionEnd = start; 
-        } else {
-            // Default behavior: move cursor back by one character.
-            const updatedValue =
-                inputBox.value.substring(0, start - 1) +
-                inputBox.value.substring(start);
-                
-            inputBox.value = updatedValue;
-
-            // Move cursor back by one character.
-            inputBox.selectionStart = inputBox.selectionEnd = start - 1; 
-        }
-    }
-}
-
-// Add event listener for keydown on the input box
-document.getElementById('inputBox').addEventListener('keydown', handleIndentation);
 
 
 
