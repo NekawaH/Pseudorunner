@@ -1,0 +1,18 @@
+DECLARE Values : ARRAY[1:100] OF INT
+INPUT n
+FOR Index <- 1 TO n
+    INPUT Values[Index]
+NEXT Index
+INPUT x
+flag <- FALSE
+Index <- 0
+REPEAT
+    Index <- Index+1
+    IF Values[Index]==x THEN
+        OUTPUT "Position: ", Index
+        flag <- TRUE
+    ENDIF
+UNTIL Index==n OR flag
+IF flag==FALSE THEN
+   OUTPUT "Not found"
+ENDIF
