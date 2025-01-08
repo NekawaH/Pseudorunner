@@ -14,9 +14,11 @@ class PseudoInterpreter {
     parse(pseudocode) {
         const lines = pseudocode.trim().split("\n");
         const parsedLines = [];
+        console.log(lines);
     
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i].trim();
+            // console.log(line);
     
             // Handle multiline comments
             if (line.includes("/*")) {
@@ -37,6 +39,10 @@ class PseudoInterpreter {
             if (line.includes("#")) {
                 line = line.split("#")[0].trim();
             }
+            
+            line = line.trim();
+
+            // console.log(line);
 
             if (!line) continue;
 
@@ -307,8 +313,10 @@ class PseudoInterpreter {
             return ["CONTINUE"];
         } else if (line === "BREAK") {
             return ["BREAK"];
+        } else if (line === "PASS") {
+            return ["PASS"];
         }
-    
+
        throw new SyntaxError(`Unknown command: ${line}`);
     }
     
@@ -531,6 +539,9 @@ class PseudoInterpreter {
             let ref;
 
             switch (token[0]) {
+                case "PASS":
+                    break;
+
                 case "SET":
                     // console.log(token[1]);
                     // console.log(token[2]);
@@ -708,7 +719,11 @@ class PseudoInterpreter {
                         } else if (parsedCode[i][0] === 'ENDWHILE') {
                             whileCount--;
                             currentBlock.push(parsedCode[i]);
-                            if (whileCount === 1) {
+                            if (whileCount === 1 && repeatCount === 0 && ifCount === 0) {
+                                if (parsedCode[i+1][0] === 'SET') { // In case of a broken down FOR loop
+                                    i++;
+                                    currentBlock.push(parsedCode[i]);
+                                }
                                 loopBody.push(currentBlock);
                                 currentBlock = [];
                             }
@@ -718,7 +733,7 @@ class PseudoInterpreter {
                         } else if (parsedCode[i][0] === 'UNTIL') {
                             repeatCount--;
                             currentBlock.push(parsedCode[i]);
-                            if (repeatCount === 1) {
+                            if (whileCount === 1 && repeatCount === 0 && ifCount === 0) {
                                 repeatBody.push(currentBlock);
                                 currentBlock = [];
                             }
@@ -728,7 +743,7 @@ class PseudoInterpreter {
                         } else if (parsedCode[i][0] === 'ENDIF') {
                             ifCount--;
                             currentBlock.push(parsedCode[i]);
-                            if (ifCount === 0) {
+                            if (whileCount === 1 && repeatCount === 0 && ifCount === 0) {
                                 loopBody.push(currentBlock);
                                 currentBlock = [];
                             }
@@ -778,7 +793,11 @@ class PseudoInterpreter {
                         } else if (parsedCode[i][0] === 'ENDWHILE') {
                             whileCount--;
                             currentBlock.push(parsedCode[i]);
-                            if (whileCount === 1) {
+                            if (whileCount === 0 && repeatCount === 1 && ifCount === 0) {
+                                if (parsedCode[i+1][0] === 'SET') { // In case of a broken down FOR loop
+                                    i++;
+                                    currentBlock.push(parsedCode[i]);
+                                }
                                 repeatBody.push(currentBlock);
                                 currentBlock = [];
                             }
@@ -788,7 +807,7 @@ class PseudoInterpreter {
                         } else if (parsedCode[i][0] === 'UNTIL') {
                             repeatCount--;
                             currentBlock.push(parsedCode[i]);
-                            if (repeatCount === 1) {
+                            if (whileCount === 0 && repeatCount === 1 && ifCount === 0) {
                                 repeatBody.push(currentBlock);
                                 currentBlock = [];
                             }
@@ -798,7 +817,7 @@ class PseudoInterpreter {
                         } else if (parsedCode[i][0] === 'ENDIF') {
                             ifCount--;
                             currentBlock.push(parsedCode[i]);
-                            if (ifCount === 0) {
+                            if (whileCount === 0 && repeatCount === 1 && ifCount === 0) {
                                 repeatBody.push(currentBlock);
                                 currentBlock = [];
                             }
@@ -812,6 +831,8 @@ class PseudoInterpreter {
                         i++;
                     }
                     repeatCondition = parsedCode[i][1];
+                    // console.log(repeatCondition);
+                    // console.log(repeatBody);
                     do {
                         for (const currentBlock of repeatBody) {
                             this.execute(currentBlock);
