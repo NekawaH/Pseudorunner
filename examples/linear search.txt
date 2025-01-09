@@ -14,5 +14,5 @@ REPEAT
     ENDIF
 UNTIL Index==n OR flag
 IF flag==FALSE THEN
-   OUTPUT "Not found"
+    OUTPUT "Not found"
 ENDIF
