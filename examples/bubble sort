@@ -18,4 +18,4 @@ REPEAT
 UNTIL NOT Swap OR Last==1
 FOR Index <- 1 TO n
     OUTPUT Values[Index]
-NEXT i 
+NEXT Index
