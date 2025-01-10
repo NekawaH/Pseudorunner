@@ -89,5 +89,16 @@ REPEAT
     count &lt;- count + 1
 UNTIL count = 5</code></pre>
 
+<h3><strong>ARRAYS</strong></h3>
+<pre><code>DECLARE &lt;identifier&gt;:ARRAY[&lt;lower&gt;:&lt;upper&gt;] OF &ltdata type&gt;
+DECLARE &lt;identifier&gt;:ARRAY[&lt;lower1&gt;:&lt;upper1&gt;,&lt;lower2&gt;:&lt;upper2&gt;] OF &ltdata type&gt;
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>DECLARE StudentNames : ARRAY[1:30] OF STRING
+DECLARE NoughtsAndCrosses : ARRAY[1:3,1:3] OF CHAR
+StudentNames[1] &lt;- "Ali"
+NoughtsAndCrosses[2,3] &lt;- 'X'
+StudentNames[n+1] &lt;- StudentNames[n]</code></pre>
+
 </body>
 </html>
