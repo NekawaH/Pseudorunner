@@ -22,7 +22,7 @@ class PseudoInterpreter {
             const match = line.match(/^SET\s+([\w\[\]<>\-,\+\*/%]+)\s+TO\s+(.+)$/);
             return ["SET", match[1], match[2]];
         } else if (line.startsWith("OUTPUT")) {
-            const match = line.match(/^OUTPUT\s+((?:"[^"]*"|[\w\[\]<>\-,\+\*/%]+)(?:,\s+(?:"[^"]*"|[\w\[\]<>\-,\+\*/%]+))*)$/);
+            const match = line.match(/^OUTPUT\s+((?:(["'])(?:\\.|(?!\2).)*\2|[\w\[\]<>\-,\+\*/%]+)(?:,\s+(?:(["'])(?:\\.|(?!\3).)*\3|[\w\[\]<>\-,\+\*/%]+))*)$/);
             const args = match[1].split(/,\s+/).map(arg => arg.trim());
             return ["OUTPUT", args];
         } else if (line.startsWith("INPUT")) {
@@ -222,7 +222,7 @@ class PseudoInterpreter {
         let expr_string = String(expr);
         // console.log("removeQuotationMark");
         // console.log(expr_string);
-        if (expr_string.startsWith('"') && expr_string.endsWith('"')) {
+        if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
             // console.log(expr_string.slice(1, -1));
             return expr_string.slice(1, -1);
         } else {
@@ -349,10 +349,11 @@ class PseudoInterpreter {
 
         
         // Handle strings
-        if (expr.startsWith('"') && expr.endsWith('"')) {
+        if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
             return expr;
-            //return expr.slice(1, -1);
+            // return expr.slice(1, -1);
         }
+        
         
         // Handle Boolean
         if (expr === "TRUE") {
