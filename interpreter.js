@@ -11,6 +11,385 @@ class PseudoInterpreter {
         this.inMultilineComment = false; // Track if we are inside a multiline comment
     }
 
+    tokenize(line) {
+        if (/^([\w\[\]<>\-,\+\*/%]+)\s*<- (.+)$/.test(line)) {
+            const match = line.match(/^([\w\[\]<>\-,\+\*/%]+)\s*<- (.+)$/);
+            return ["SET", match[1], match[2]];
+        } else if (/^([\w\[\]<>\-,\+\*/%]+)\s*= (.+)$/.test(line)) {
+            const match = line.match(/^([\w\[\]<>\-,\+\*/%]+)\s*= (.+)$/);
+            return ["SET", match[1], match[2]];
+        } else if (/^SET\s+([\w\[\]<>\-,\+\*/%]+)\s+TO\s+(.+)$/.test(line)) {
+            const match = line.match(/^SET\s+([\w\[\]<>\-,\+\*/%]+)\s+TO\s+(.+)$/);
+            return ["SET", match[1], match[2]];
+        } else if (line.startsWith("OUTPUT")) {
+            const match = line.match(/^OUTPUT\s+((?:"[^"]*"|[\w\[\]<>\-,\+\*/%]+)(?:,\s+(?:"[^"]*"|[\w\[\]<>\-,\+\*/%]+))*)$/);
+            const args = match[1].split(/,\s+/).map(arg => arg.trim());
+            return ["OUTPUT", args];
+        } else if (line.startsWith("INPUT")) {
+            const match = line.match(/^INPUT ([A-Za-z0-9\[\]<>,]+)$/);
+            return ["INPUT", match[1]];
+        } else if (line.startsWith("APPEND")) {
+            const match = line.match(/^APPEND (\w+), (.+)$/);
+            return ["APPEND", match[1], match[2]];
+        } else if (line.startsWith("REMOVE")) {
+            const match = line.match(/^REMOVE (\w+), (\d+)$/);
+            return ["REMOVE", match[1], parseInt(match[2], 10)];
+        } else if (line.startsWith("LEN")) {
+            const match = line.match(/^LEN\((\w+)\)$/);
+            return ["LEN", match[1]];
+        } else if (line.startsWith("DEFINE")) {
+            const match = line.match(/^DEFINE (\w+)\((.*)\)$/);
+            return ["DEFINE", match[1], match[2] ? match[2].split(", ").map((p) => p.trim()) : []];
+        } else if (line === "ENDDEFINE") {
+            return ["ENDDEFINE"];
+        } else if (line.startsWith("RETURN")) {
+            const match = line.match(/^RETURN (.+)$/);
+            return ["RETURN", match[1]];
+        } else if (line.startsWith("CALL")) {
+            const match = line.match(/^CALL (\w+)\((.*)\)$/);
+            return ["CALL", match[1], match[2] ? match[2].split(", ").map((p) => p.trim()) : []];
+        } else if (line.startsWith("IF")) {
+            const match = line.match(/^IF (.+) THEN$/);
+            this.ifCountTracker++;
+            this.elseIfTracker.push(0);
+            return ["IF", match[1]];
+        } else if (line.startsWith("ELSE IF")) {
+            const match = line.match(/^ELSE IF (.+)$/);
+            this.elseIfTracker[this.ifCountTracker]++;
+            return ["ELSE IF", match[1]];
+        } else if (line === "ELSE") {
+            return ["ELSE"];
+        } else if (line === "ENDIF") {
+            return ["ENDIF"];
+        } else if (line.startsWith("WHILE")) {
+            const match = line.match(/^WHILE (.+) DO$/);
+            return ["WHILE", match[1]];
+        } else if (line === "ENDWHILE") {
+            return ["ENDWHILE"];
+        } else if (/^FOR (\w+)\s*<-?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/.test(line)) {
+            const match = line.match(/^FOR (\w+)\s*<-?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/);
+            return ["FOR", match[1], match[2], match[3]];
+        } else if (/^FOR (\w+)\s*=?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/.test(line)) {
+            const match = line.match(/^FOR (\w+)\s*=?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/);
+            return ["FOR", match[1], match[2], match[3]];
+        } else if (line.startsWith("NEXT")) {
+            const match = line.match(/^NEXT (\w+)$/);
+            return ["NEXT", match[1]];
+        } else if (line.startsWith("CASE OF")) {
+            const match = line.match(/^CASE OF\s+(.*)$/);
+            return ["CASE", match[1]];
+        } else if (line.startsWith("OTHERWISE")) {
+            const match = line.match(/^OTHERWISE\s*:\s*(.*)/);
+            return ["OTHERWISE", match ? match[1].trim() : ""];
+        } else if (/^(\S+)\s*TO\s*(\S+)\s*:\s*/.test(line)) {
+            const match = line.match(/^(.*?)\s*TO\s*(.*?)\s*:\s*(.*)/);
+            return ["RANGE_CASE", match[1].trim(), match[2].trim(), match[3].trim()];
+        } else if (/^\S+\s*:\s*/.test(line)) {
+            const match = line.match(/^(.*?)\s*:\s*(.*)/);
+            return ["CASE_VALUE", match[1].trim(), match[2].trim()];
+        } else if (line === "ENDCASE") {
+            return ["ENDCASE"];
+        } else if (line === "REPEAT") {
+            return ["REPEAT"];
+        } else if (/^UNTIL\s+(.*)$/.test(line)) {
+            const match = line.match(/^UNTIL\s+(.*)$/);
+            return ["UNTIL", match[1]];
+        } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
+            const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
+            return ["DECLARE_ARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], match[4]];
+        } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
+            const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
+            return ["DECLARE_2D_ARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], [parseInt(match[4], 10), parseInt(match[5], 10)], match[6]];
+        } else if (line === "CONTINUE") {
+            return ["CONTINUE"];
+        } else if (line === "BREAK") {
+            return ["BREAK"];
+        } else if (line === "PASS") {
+            return ["PASS"];
+        }
+
+       throw new SyntaxError(`Unknown command: ${line}`);
+    }
+
+    // Utilities
+
+    forToWhile(inputLines) {
+        let transformdLines = [];
+        let forCount = 0;
+        if (inputLines[0] === "FOR") {
+            forCount++;
+            const iteratorName = inputLines[1];
+            let initialLine = ["SET", iteratorName, inputLines[2]]; // Initialize iterator
+            transformdLines.push(initialLine);
+            let whileLine = ["WHILE", iteratorName + "<=" + inputLines[3]]; // While line
+            transformdLines.push(whileLine);
+
+            while (++i < lines.length) {
+                let line = inputLines[i];
+
+                if (line[0] === "NEXT") {
+                    forCount--;
+                    if (forCount == 0) {
+                        let nextLine = ["SET", iteratorName, iteratorName + "+1"];
+                        transformdLines.push(nextLine);
+                        transformdLines.push(["ENDWHILE"]);
+                        break; 
+                    }
+                } else if (line[0] === "IF") {
+                    forCount++;
+                    let innerForCount = forCount;
+                    let innerLines = [];
+                    do {
+                        innerLines.push(line[i]);
+                        i++;
+                        if (line[0] === "IF") {
+                            forCount++;
+                        } else if (line[0] === "NEXT") {
+                            forCount--;
+                        }
+                    } while (forCount !== innerForCount);
+                    let processedInnerLines = this.forToWhile(innerLines);
+                    for (const processedLine of processedInnerLines) {
+                        transformdLines.push(processedLine);
+                    }
+                } else {
+                    transformdLines.push(line);
+                }
+            }
+        }
+        return transformdLines;
+    }
+
+    replaceVariables(expr) {
+        expr = expr.replace(/\b\w+\b/g, (match) => {
+            return this.variables[match] !== undefined ? this.variables[match] : match;
+        });
+        return expr;
+    }
+
+    replaceArrayVariables(expr) {
+        // Regular expression to match variables in square brackets
+        const regex = /\b(\w+)\[(\w+)(?:,(\w+))?\]/g;
+    
+        expr = expr.replace(regex, (match, varName, index1, index2) => {
+            // Replace the variable name with its value if it exists in this.variables
+            const replacedVar = this.variables[varName] !== undefined ? this.variables[varName] : varName;
+    
+            // Replace indices if they are defined in this.variables
+            const replacedIndex1 = this.variables[index1] !== undefined ? this.variables[index1] : index1;
+            const replacedIndex2 = index2 && this.variables[index2] !== undefined ? this.variables[index2] : index2;
+    
+            // Construct the new expression based on whether it's a 1D or 2D array
+            return replacedIndex2 
+                ? `${replacedVar}[${replacedIndex1},${replacedIndex2}]` 
+                : `${replacedVar}[${replacedIndex1}]`;
+        });
+    
+        return expr;
+    }
+    
+    parseReference(expr) {
+        const pattern1 = /^(.*)\[(.+?)\]$/;
+        const pattern2 = /^(.*)\[(.+?),(.+?)\]$/;
+        let match;
+        if (pattern1.test(expr)) { // 1D array
+            match = expr.match(pattern1);
+            return [match[1],this.evalExpression(match[2])]
+        } else if (pattern2.test(expr)) { // 2D array
+            match = expr.match(pattern2);
+            return [match[1],this.evalExpression(match[2]),this.evalExpression(match[3])]
+        } else {
+            return [expr];
+        }
+    }
+
+    evalArray(expr) {
+        const pattern1 = /^(.*)\[(.+?)\]$/;
+        const pattern2 = /^(.*)\[(.+?),(.+?)\]$/;
+        let match;
+        if (pattern1.test(expr)) { // 1D array
+            match = expr.match(pattern1);
+            return this.arrays[match[1]][this.evalExpression(match[2])]
+        } else if (pattern2.test(expr)) { // 2D array
+            match = expr.match(pattern2);
+            return this.arrays[match[1]][this.evalExpression(match[2])][this.evalExpression(match[3])]
+        } else {
+            return expr;
+        }
+    }
+
+    removeQuotationMark(expr) {
+        let expr_string = String(expr);
+        // console.log("removeQuotationMark");
+        // console.log(expr_string);
+        if (expr_string.startsWith('"') && expr_string.endsWith('"')) {
+            // console.log(expr_string.slice(1, -1));
+            return expr_string.slice(1, -1);
+        } else {
+            return expr;
+        }
+    }
+
+    turnBooleanCapitalized(expr) {
+        if (typeof expr === "boolean") {
+            if (expr) return "TRUE";
+            else return "FALSE";
+        }
+        if (expr === 'true') {
+            return "TRUE";
+        }
+        if (expr === 'false') {
+            return "FALSE";
+        }
+        return expr;
+    }
+
+    replaceSingleEquals(expr) {
+        return expr.replace(/(^|[^=])=([^=]|$)/g, '$1==$2');
+    }
+
+    take_left(str, x) {
+        // In zero-based indexing, the leftmost x chars go from index 0 up to x
+        return str.substring(0, x);
+    }
+
+    take_right(str, x) {
+        // In zero-based indexing, we start at str.length - x
+        return str.substring(str.length - x);
+    }
+
+    take_mid(str, x, y) {
+        // Convert 1-based index (x) to zero-based, then retrieve y characters
+        const startIndex = x - 1;
+        return str.substring(startIndex, startIndex + y);
+    }
+    
+    /*
+    handleForLoop(parsedCode, i, varName, startVar, endVar) {
+        // Handle a FOR loop and any nested loops.
+        let forIndex = i;
+        let loopI = 1;
+    
+        // Loop over the range from start to end
+        for (let loopVal = start; loopVal <= end; loopVal++) {
+            this.variables[varName] = loopVal;
+            loopI = forIndex + 1;
+            let executableCode = [];
+    
+            // Execute the body of the loop
+            while (loopI < parsedCode.length) {
+                let currentToken = parsedCode[loopI];
+                if (currentToken[0] === 'FOR') {
+                    // Recursively handle nested loops
+                    this.execute(executableCode);
+                    executableCode = [];
+                    loopI = this.handleForLoop(parsedCode, loopI, currentToken[1], currentToken[2], currentToken[3]);
+                } else if (currentToken[0] === 'NEXT') {
+                    this.execute(executableCode);
+                    executableCode = [];
+                    if (currentToken[1] === varName) {
+                        break;  // End of the current loop
+                    }
+                } else {
+                    executableCode.push(currentToken);
+                    // this.execute([currentToken]);  // Execute other commands
+                }
+                loopI++;
+            }
+    
+            this.execute(executableCode);
+            executableCode = [];
+        }
+    
+        return loopI;
+    }
+    */
+
+    evalExpression(expr) {
+        // Replace <> with !=
+        expr = expr.replace(/<>/g, '!=');
+
+        // Replace AND with &&
+        expr = expr.replace(/AND/g, '&&');
+
+        // Replace OR with ||
+        expr = expr.replace(/OR/g, '||');
+
+        // Replace NOT with !
+        expr = expr.replace(/NOT/g, '!');
+
+        // Replace Booleans
+        expr = expr.replace(/TRUE/g, 'true');
+        expr = expr.replace(/FALSE/g, 'false');
+
+        // Replace = with ==
+        expr = this.replaceSingleEquals(expr);
+
+        /*
+        // Handle CALL expression for function calls
+        if (expr.startsWith("CALL")) {
+            const match = expr.match(/^CALL (\w+)\((.*)\)$/);
+            if (match) {
+                const funcName = match[1];
+                const args = match[2] ? match[2].split(",").map((arg) => this.evalExpression(arg.trim())) : [];
+                return this.callFunction(funcName, args);
+            }
+        }
+
+        // Handle LEN function
+        if (expr.startsWith("LEN(")) {
+            const arrayName = expr.slice(4, -1); // Extract array name
+            if (this.variables[arrayName] && Array.isArray(this.variables[arrayName])) {
+                return this.variables[arrayName].length;
+            } else {
+                throw new Error(`${arrayName} is not an array or is not defined.`);
+            }
+        }
+        */
+
+        
+        // Handle strings
+        if (expr.startsWith('"') && expr.endsWith('"')) {
+            return expr;
+            //return expr.slice(1, -1);
+        }
+        
+        // Handle Boolean
+        if (expr === "TRUE") {
+            return true;
+        }
+        if (expr === "FALSE") {
+            return false;
+        }
+
+        // Replace variables in the expression with their values
+        expr = this.replaceVariables(expr);
+
+        // Regular expression to match 1D and 2D array references
+        const arrayPattern = /([A-Za-z]+)\[(.+?)(?:,(\S+))?\]/g;
+
+        // Function to replace array references with their evaluated values
+        const replaceArrayReferences = (match, arrayName, index1, index2) => {
+            if (index2 !== undefined) { // 2D array reference
+                index1 = this.evalExpression(index1);
+                index2 = this.evalExpression(index2);
+                return this.evalArray(`${arrayName}[${this.evalExpression(index1)},${index2}]`);
+            } else { // 1D array reference
+                index1 = this.evalExpression(index1);
+                return this.evalArray(`${arrayName}[${index1}]`);
+            }
+        };
+
+        // Replace all array references in the expression
+        expr = expr.replace(arrayPattern, replaceArrayReferences);
+
+        try {
+            return eval(expr); // Evaluate mathematical and logical expressions
+        } catch {
+            throw new Error(`Invalid expression: ${expr}`);
+        }
+    }
+
     parse(pseudocode) {
         const lines = pseudocode.trim().split("\n");
         const parsedLines = [];
@@ -170,361 +549,6 @@ class PseudoInterpreter {
             console.log(pline);
         }
         return parsedLines;
-    }
-
-    forToWhile(inputLines) {
-        let transformdLines = [];
-        let forCount = 0;
-        if (inputLines[0] === "FOR") {
-            forCount++;
-            const iteratorName = inputLines[1];
-            let initialLine = ["SET", iteratorName, inputLines[2]]; // Initialize iterator
-            transformdLines.push(initialLine);
-            let whileLine = ["WHILE", iteratorName + "<=" + inputLines[3]]; // While line
-            transformdLines.push(whileLine);
-
-            while (++i < lines.length) {
-                let line = inputLines[i];
-
-                if (line[0] === "NEXT") {
-                    forCount--;
-                    if (forCount == 0) {
-                        let nextLine = ["SET", iteratorName, iteratorName + "+1"];
-                        transformdLines.push(nextLine);
-                        transformdLines.push(["ENDWHILE"]);
-                        break; 
-                    }
-                } else if (line[0] === "IF") {
-                    forCount++;
-                    let innerForCount = forCount;
-                    let innerLines = [];
-                    do {
-                        innerLines.push(line[i]);
-                        i++;
-                        if (line[0] === "IF") {
-                            forCount++;
-                        } else if (line[0] === "NEXT") {
-                            forCount--;
-                        }
-                    } while (forCount !== innerForCount);
-                    let processedInnerLines = this.forToWhile(innerLines);
-                    for (const processedLine of processedInnerLines) {
-                        transformdLines.push(processedLine);
-                    }
-                } else {
-                    transformdLines.push(line);
-                }
-            }
-        }
-        return transformdLines;
-    }
-        
-
-    tokenize(line) {
-        if (/^([\w\[\]<>\-,\+\*/%]+)\s*<- (.+)$/.test(line)) {
-            const match = line.match(/^([\w\[\]<>\-,\+\*/%]+)\s*<- (.+)$/);
-            return ["SET", match[1], match[2]];
-        } else if (/^([\w\[\]<>\-,\+\*/%]+)\s*= (.+)$/.test(line)) {
-            const match = line.match(/^([\w\[\]<>\-,\+\*/%]+)\s*= (.+)$/);
-            return ["SET", match[1], match[2]];
-        } else if (/^SET\s+([\w\[\]<>\-,\+\*/%]+)\s+TO\s+(.+)$/.test(line)) {
-            const match = line.match(/^SET\s+([\w\[\]<>\-,\+\*/%]+)\s+TO\s+(.+)$/);
-            return ["SET", match[1], match[2]];
-        } else if (line.startsWith("OUTPUT")) {
-            const match = line.match(/^OUTPUT\s+((?:"[^"]*"|[\w\[\]<>\-,\+\*/%]+)(?:,\s+(?:"[^"]*"|[\w\[\]<>\-,\+\*/%]+))*)$/);
-            const args = match[1].split(/,\s+/).map(arg => arg.trim());
-            return ["OUTPUT", args];
-        } else if (line.startsWith("INPUT")) {
-            const match = line.match(/^INPUT ([A-Za-z0-9\[\]<>,]+)$/);
-            return ["INPUT", match[1]];
-        } else if (line.startsWith("APPEND")) {
-            const match = line.match(/^APPEND (\w+), (.+)$/);
-            return ["APPEND", match[1], match[2]];
-        } else if (line.startsWith("REMOVE")) {
-            const match = line.match(/^REMOVE (\w+), (\d+)$/);
-            return ["REMOVE", match[1], parseInt(match[2], 10)];
-        } else if (line.startsWith("LEN")) {
-            const match = line.match(/^LEN\((\w+)\)$/);
-            return ["LEN", match[1]];
-        } else if (line.startsWith("DEFINE")) {
-            const match = line.match(/^DEFINE (\w+)\((.*)\)$/);
-            return ["DEFINE", match[1], match[2] ? match[2].split(", ").map((p) => p.trim()) : []];
-        } else if (line === "ENDDEFINE") {
-            return ["ENDDEFINE"];
-        } else if (line.startsWith("RETURN")) {
-            const match = line.match(/^RETURN (.+)$/);
-            return ["RETURN", match[1]];
-        } else if (line.startsWith("CALL")) {
-            const match = line.match(/^CALL (\w+)\((.*)\)$/);
-            return ["CALL", match[1], match[2] ? match[2].split(", ").map((p) => p.trim()) : []];
-        } else if (line.startsWith("IF")) {
-            const match = line.match(/^IF (.+) THEN$/);
-            this.ifCountTracker++;
-            this.elseIfTracker.push(0);
-            return ["IF", match[1]];
-        } else if (line.startsWith("ELSE IF")) {
-            const match = line.match(/^ELSE IF (.+)$/);
-            this.elseIfTracker[this.ifCountTracker]++;
-            return ["ELSE IF", match[1]];
-        } else if (line === "ELSE") {
-            return ["ELSE"];
-        } else if (line === "ENDIF") {
-            return ["ENDIF"];
-        } else if (line.startsWith("WHILE")) {
-            const match = line.match(/^WHILE (.+) DO$/);
-            return ["WHILE", match[1]];
-        } else if (line === "ENDWHILE") {
-            return ["ENDWHILE"];
-        } else if (/^FOR (\w+)\s*<-?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/.test(line)) {
-            const match = line.match(/^FOR (\w+)\s*<-?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/);
-            return ["FOR", match[1], match[2], match[3]];
-        } else if (/^FOR (\w+)\s*=?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/.test(line)) {
-            const match = line.match(/^FOR (\w+)\s*=?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/);
-            return ["FOR", match[1], match[2], match[3]];
-        } else if (line.startsWith("NEXT")) {
-            const match = line.match(/^NEXT (\w+)$/);
-            return ["NEXT", match[1]];
-        } else if (line.startsWith("CASE OF")) {
-            const match = line.match(/^CASE OF\s+(.*)$/);
-            return ["CASE", match[1]];
-        } else if (line.startsWith("OTHERWISE")) {
-            const match = line.match(/^OTHERWISE\s*:\s*(.*)/);
-            return ["OTHERWISE", match ? match[1].trim() : ""];
-        } else if (/^(\S+)\s*TO\s*(\S+)\s*:\s*/.test(line)) {
-            const match = line.match(/^(.*?)\s*TO\s*(.*?)\s*:\s*(.*)/);
-            return ["RANGE_CASE", match[1].trim(), match[2].trim(), match[3].trim()];
-        } else if (/^\S+\s*:\s*/.test(line)) {
-            const match = line.match(/^(.*?)\s*:\s*(.*)/);
-            return ["CASE_VALUE", match[1].trim(), match[2].trim()];
-        } else if (line === "ENDCASE") {
-            return ["ENDCASE"];
-        } else if (line === "REPEAT") {
-            return ["REPEAT"];
-        } else if (/^UNTIL\s+(.*)$/.test(line)) {
-            const match = line.match(/^UNTIL\s+(.*)$/);
-            return ["UNTIL", match[1]];
-        } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
-            const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
-            return ["DECLARE_ARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], match[4]];
-        } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
-            const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
-            return ["DECLARE_2D_ARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], [parseInt(match[4], 10), parseInt(match[5], 10)], match[6]];
-        } else if (line === "CONTINUE") {
-            return ["CONTINUE"];
-        } else if (line === "BREAK") {
-            return ["BREAK"];
-        } else if (line === "PASS") {
-            return ["PASS"];
-        }
-
-       throw new SyntaxError(`Unknown command: ${line}`);
-    }
-    
-
-    evalExpression(expr) {
-        // Replace <> with !=
-        expr = expr.replace(/<>/g, '!=');
-
-        // Replace AND with &&
-        expr = expr.replace(/AND/g, '&&');
-
-        // Replace OR with ||
-        expr = expr.replace(/OR/g, '||');
-
-        // Replace NOT with !
-        expr = expr.replace(/NOT/g, '!');
-
-        // Replace Booleans
-        expr = expr.replace(/TRUE/g, 'true');
-        expr = expr.replace(/FALSE/g, 'false');
-
-        /*
-        // Handle CALL expression for function calls
-        if (expr.startsWith("CALL")) {
-            const match = expr.match(/^CALL (\w+)\((.*)\)$/);
-            if (match) {
-                const funcName = match[1];
-                const args = match[2] ? match[2].split(",").map((arg) => this.evalExpression(arg.trim())) : [];
-                return this.callFunction(funcName, args);
-            }
-        }
-
-        // Handle LEN function
-        if (expr.startsWith("LEN(")) {
-            const arrayName = expr.slice(4, -1); // Extract array name
-            if (this.variables[arrayName] && Array.isArray(this.variables[arrayName])) {
-                return this.variables[arrayName].length;
-            } else {
-                throw new Error(`${arrayName} is not an array or is not defined.`);
-            }
-        }
-        */
-
-        
-        // Handle strings
-        if (expr.startsWith('"') && expr.endsWith('"')) {
-            return expr;
-            //return expr.slice(1, -1);
-        }
-        
-        // Handle Boolean
-        if (expr === "TRUE") {
-            return true;
-        }
-        if (expr === "FALSE") {
-            return false;
-        }
-
-        // Replace variables in the expression with their values
-        expr = this.replaceVariables(expr);
-
-        // Regular expression to match 1D and 2D array references
-        const arrayPattern = /([A-Za-z]+)\[(.+?)(?:,(\S+))?\]/g;
-
-        // Function to replace array references with their evaluated values
-        const replaceArrayReferences = (match, arrayName, index1, index2) => {
-            if (index2 !== undefined) { // 2D array reference
-                index1 = this.evalExpression(index1);
-                index2 = this.evalExpression(index2);
-                return this.evalArray(`${arrayName}[${this.evalExpression(index1)},${index2}]`);
-            } else { // 1D array reference
-                index1 = this.evalExpression(index1);
-                return this.evalArray(`${arrayName}[${index1}]`);
-            }
-        };
-
-        // Replace all array references in the expression
-        expr = expr.replace(arrayPattern, replaceArrayReferences);
-
-        try {
-            return eval(expr); // Evaluate mathematical and logical expressions
-        } catch {
-            throw new Error(`Invalid expression: ${expr}`);
-        }
-    }
-
-    replaceVariables(expr) {
-        expr = expr.replace(/\b\w+\b/g, (match) => {
-            return this.variables[match] !== undefined ? this.variables[match] : match;
-        });
-        return expr;
-    }
-
-    replaceArrayVariables(expr) {
-        // Regular expression to match variables in square brackets
-        const regex = /\b(\w+)\[(\w+)(?:,(\w+))?\]/g;
-    
-        expr = expr.replace(regex, (match, varName, index1, index2) => {
-            // Replace the variable name with its value if it exists in this.variables
-            const replacedVar = this.variables[varName] !== undefined ? this.variables[varName] : varName;
-    
-            // Replace indices if they are defined in this.variables
-            const replacedIndex1 = this.variables[index1] !== undefined ? this.variables[index1] : index1;
-            const replacedIndex2 = index2 && this.variables[index2] !== undefined ? this.variables[index2] : index2;
-    
-            // Construct the new expression based on whether it's a 1D or 2D array
-            return replacedIndex2 
-                ? `${replacedVar}[${replacedIndex1},${replacedIndex2}]` 
-                : `${replacedVar}[${replacedIndex1}]`;
-        });
-    
-        return expr;
-    }
-    
-
-    removeQuotationMark(expr) {
-        let expr_string = String(expr);
-        // console.log("removeQuotationMark");
-        // console.log(expr_string);
-        if (expr_string.startsWith('"') && expr_string.endsWith('"')) {
-            // console.log(expr_string.slice(1, -1));
-            return expr_string.slice(1, -1);
-        } else {
-            return expr;
-        }
-    }
-
-    turnBooleanCapitalized(expr) {
-        if (typeof expr === "boolean") {
-            if (expr) return "TRUE";
-            else return "FALSE";
-        }
-        if (expr === 'true') {
-            return "TRUE";
-        }
-        if (expr === 'false') {
-            return "FALSE";
-        }
-        return expr;
-    }
-    
-    handleForLoop(parsedCode, i, varName, startVar, endVar) {
-        // Handle a FOR loop and any nested loops.
-        let forIndex = i;
-        let loopI = 1;
-    
-        // Loop over the range from start to end
-        for (let loopVal = start; loopVal <= end; loopVal++) {
-            this.variables[varName] = loopVal;
-            loopI = forIndex + 1;
-            let executableCode = [];
-    
-            // Execute the body of the loop
-            while (loopI < parsedCode.length) {
-                let currentToken = parsedCode[loopI];
-                if (currentToken[0] === 'FOR') {
-                    // Recursively handle nested loops
-                    this.execute(executableCode);
-                    executableCode = [];
-                    loopI = this.handleForLoop(parsedCode, loopI, currentToken[1], currentToken[2], currentToken[3]);
-                } else if (currentToken[0] === 'NEXT') {
-                    this.execute(executableCode);
-                    executableCode = [];
-                    if (currentToken[1] === varName) {
-                        break;  // End of the current loop
-                    }
-                } else {
-                    executableCode.push(currentToken);
-                    // this.execute([currentToken]);  // Execute other commands
-                }
-                loopI++;
-            }
-    
-            this.execute(executableCode);
-            executableCode = [];
-        }
-    
-        return loopI;
-    }
-
-    evalArray(expr) {
-        const pattern1 = /^(.*)\[(.+?)\]$/;
-        const pattern2 = /^(.*)\[(.+?),(.+?)\]$/;
-        let match;
-        if (pattern1.test(expr)) { // 1D array
-            match = expr.match(pattern1);
-            return this.arrays[match[1]][this.evalExpression(match[2])]
-        } else if (pattern2.test(expr)) { // 2D array
-            match = expr.match(pattern2);
-            return this.arrays[match[1]][this.evalExpression(match[2])][this.evalExpression(match[3])]
-        } else {
-            return expr;
-        }
-    }
-
-    parseReference(expr) {
-        const pattern1 = /^(.*)\[(.+?)\]$/;
-        const pattern2 = /^(.*)\[(.+?),(.+?)\]$/;
-        let match;
-        if (pattern1.test(expr)) { // 1D array
-            match = expr.match(pattern1);
-            return [match[1],this.evalExpression(match[2])]
-        } else if (pattern2.test(expr)) { // 2D array
-            match = expr.match(pattern2);
-            return [match[1],this.evalExpression(match[2]),this.evalExpression(match[3])]
-        } else {
-            return [expr];
-        }
     }
 
     execute(parsedCode) {
