@@ -1,0 +1,14 @@
+DECLARE Number : ARRAY[1:100] OF INT
+INPUT n
+FOR Index <- 1 TO n
+    INPUT Number[Index]
+NEXT Index
+
+Total <- 0
+FOR Count <- 1 TO n
+    Total <- Total+Number[Count]
+NEXT Count
+
+Average <- Total/n
+OUTPUT Total
+OUTPUT Average
