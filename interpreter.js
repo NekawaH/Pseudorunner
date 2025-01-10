@@ -244,8 +244,8 @@ class PseudoInterpreter {
         return expr;
     }
 
-    replaceSingleEquals(expr) {
-        return expr.replace(/(^|[^=])=([^=]|$)/g, '$1==$2');
+    replaceSingleEquals(input) {
+        return input.replace(/(^|[^=!<>])=([^=]|$)/g, '$1==$2');
     }
 
     take_left(str, x) {
