@@ -11,6 +11,8 @@
     <li>Open <code>index.html</code> in a browser (e.g. Google Chrome)</li>
 </ol>
 
+<p>(Only files <code>index.html</code>, <code>styles.css</code>, and <code>interpreter.js</code> are necessary)</p>
+
 <h2>Supported Syntax:</h2>
 
 <h3><strong>INPUT</strong></h3>
