@@ -22,7 +22,7 @@ class PseudoInterpreter {
             const match = line.match(/^SET\s+([\w\[\]<>\-,\+\*/%]+)\s+TO\s+(.+)$/);
             return ["SET", match[1], match[2]];
         } else if (line.startsWith("OUTPUT")) {
-            const match = line.match(/^OUTPUT\s+((?:(["'])(?:\\.|(?!\2).)*\2|[\w\[\]<>\-,\+\*/%]+)(?:,\s+(?:(["'])(?:\\.|(?!\3).)*\3|[\w\[\]<>\-,\+\*/%]+))*)$/);
+            const match = line.match(/^OUTPUT\s+((?:.+?)(?:,\s+(?:.+?))*)$/);
             const args = match[1].split(/,\s+/).map(arg => arg.trim());
             return ["OUTPUT", args];
         } else if (line.startsWith("INPUT")) {
@@ -207,17 +207,17 @@ class PseudoInterpreter {
         return input.replace(/(^|[^=!<>])=([^=]|$)/g, '$1==$2');
     }
 
-    take_left(str, x) {
+    evalLeft(str, x) {
         // In zero-based indexing, the leftmost x chars go from index 0 up to x
         return str.substring(0, x);
     }
 
-    take_right(str, x) {
+    evalRight(str, x) {
         // In zero-based indexing, we start at str.length - x
         return str.substring(str.length - x);
     }
 
-    take_mid(str, x, y) {
+    evalMid(str, x, y) {
         // Convert 1-based index (x) to zero-based, then retrieve y characters
         const startIndex = x - 1;
         return str.substring(startIndex, startIndex + y);
@@ -267,64 +267,34 @@ class PseudoInterpreter {
     evalExpression(expr) {
         expr = String(expr);
 
-        // Replace <> with !=
+        // Replace logical and comparison operators
         expr = expr.replace(/<>/g, '!=');
-
-        // Replace AND with &&
         expr = expr.replace(/AND/g, '&&');
-
-        // Replace OR with ||
         expr = expr.replace(/OR/g, '||');
-
-        // Replace NOT with !
         expr = expr.replace(/NOT/g, '!');
-
-        // Replace Booleans
         expr = expr.replace(/TRUE/g, 'true');
         expr = expr.replace(/FALSE/g, 'false');
-
-        // Replace = with ==
         expr = this.replaceSingleEquals(expr);
 
-        /*
-        // Handle CALL expression for function calls
-        if (expr.startsWith("CALL")) {
-            const match = expr.match(/^CALL (\w+)\((.*)\)$/);
-            if (match) {
-                const funcName = match[1];
-                const args = match[2] ? match[2].split(",").map((arg) => this.evalExpression(arg.trim())) : [];
-                return this.callFunction(funcName, args);
-            }
-        }
+        // Handle LEFT, RIGHT, MID functions
+        expr = expr.replace(/LEFT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
+            const str = String(this.evalExpression(strExpr.trim()));
+            const len = parseInt(this.evalExpression(lenExpr.trim()));
+            return '"' + String(this.evalLeft(str,len)) + '"';
+        });
 
-        // Handle LEN function
-        if (expr.startsWith("LEN(")) {
-            const arrayName = expr.slice(4, -1); // Extract array name
-            if (this.variables[arrayName] && Array.isArray(this.variables[arrayName])) {
-                return this.variables[arrayName].length;
-            } else {
-                throw new Error(`${arrayName} is not an array or is not defined.`);
-            }
-        }
-        */
+        expr = expr.replace(/RIGHT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
+            const str = String(this.evalExpression(strExpr.trim()));
+            const len = parseInt(this.evalExpression(lenExpr.trim()));
+            return '"' + String(this.evalRight(str,len)) + '"';
+        });
 
-        
-        // Handle strings
-        if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
-            return expr;
-            // return expr.slice(1, -1);
-        }
-        
-        
-        // Handle Boolean
-        if (expr === "TRUE") {
-            return true;
-        }
-        if (expr === "FALSE") {
-            return false;
-        }
-
-        // console.log(expr);
+        expr = expr.replace(/MID\(([^,]+),\s*([^\s,]+),\s*([^\)]+)\)/g, (match, strExpr, startExpr, lenExpr) => {
+            const str = String(this.evalExpression(strExpr.trim()));
+            const start = parseInt(this.evalExpression(startExpr.trim()));
+            const len = parseInt(this.evalExpression(lenExpr.trim()));
+            return '"' + String(this.evalMid(str,start,len)) + '"';
+        });
 
         // Replace variables in the expression with their values
         expr = this.replaceVariables(expr);
