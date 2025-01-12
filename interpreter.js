@@ -268,38 +268,79 @@ class PseudoInterpreter {
         expr = String(expr);
 
         // Replace logical and comparison operators
-        expr = expr.replace(/<>/g, '!=');
-        expr = expr.replace(/AND/g, '&&');
-        expr = expr.replace(/OR/g, '||');
-        expr = expr.replace(/NOT/g, '!');
-        expr = expr.replace(/TRUE/g, 'true');
-        expr = expr.replace(/FALSE/g, 'false');
+        expr = expr.replace(/(?<!&)&(?!&)/g, '+');  // Concatenation
+        expr = expr.replace(/<>/g, '!=');           // Not equal to
+        expr = expr.replace(/\bAND\b/g, '&&');      // And
+        expr = expr.replace(/OR/g, '||');           // Or
+        expr = expr.replace(/NOT/g, '!');           // Not
+        expr = expr.replace(/TRUE/g, 'true');       // True
+        expr = expr.replace(/FALSE/g, 'false');     // False
         expr = this.replaceSingleEquals(expr);
 
-        // Handle LEFT, RIGHT, MID functions
-        expr = expr.replace(/LEFT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
-            const str = String(this.evalExpression(strExpr.trim()));
-            const len = parseInt(this.evalExpression(lenExpr.trim()));
-            return '"' + String(this.evalLeft(str,len)) + '"';
-        });
+        // Handle LENGTH, LEFT, RIGHT, MID functions
+        while (expr.includes("LENGTH(")) {
+            expr = expr.replace(/LENGTH\(([^)]+)\)/g, (match, strExpr) => {
+                const evaluatedString = this.evalExpression(strExpr.trim());
+                return evaluatedString.length;
+            });
+        }
 
-        expr = expr.replace(/RIGHT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
-            const str = String(this.evalExpression(strExpr.trim()));
-            const len = parseInt(this.evalExpression(lenExpr.trim()));
-            return '"' + String(this.evalRight(str,len)) + '"';
-        });
+        while (expr.includes("LEFT(")) {
+            expr = expr.replace(/LEFT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
+                const str = String(this.evalExpression(strExpr.trim()));
+                const len = parseInt(this.evalExpression(lenExpr.trim()));
+                return '"' + String(this.evalLeft(str,len)) + '"';
+            });
+        }
 
-        expr = expr.replace(/MID\(([^,]+),\s*([^\s,]+),\s*([^\)]+)\)/g, (match, strExpr, startExpr, lenExpr) => {
-            const str = String(this.evalExpression(strExpr.trim()));
-            const start = parseInt(this.evalExpression(startExpr.trim()));
-            const len = parseInt(this.evalExpression(lenExpr.trim()));
-            return '"' + String(this.evalMid(str,start,len)) + '"';
-        });
+        while (expr.includes("RIGHT(")) {
+            expr = expr.replace(/RIGHT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
+                const str = String(this.evalExpression(strExpr.trim()));
+                const len = parseInt(this.evalExpression(lenExpr.trim()));
+                return '"' + String(this.evalRight(str,len)) + '"';
+            });
+        }
+
+        while (expr.includes("MID(")) {
+            expr = expr.replace(/MID\(([^,]+),\s*([^\s,]+),\s*([^\)]+)\)/g, (match, strExpr, startExpr, lenExpr) => {
+                const str = String(this.evalExpression(strExpr.trim()));
+                const start = parseInt(this.evalExpression(startExpr.trim()));
+                const len = parseInt(this.evalExpression(lenExpr.trim()));
+                return '"' + String(this.evalMid(str,start,len)) + '"';
+            });
+        }
+
+        // Handle UCASE and LCASE functions
+        while (expr.includes("UCASE(") || expr.includes("LCASE(")) {
+            expr = expr.replace(/UCASE\(([^)]+)\)/g, (match, strExpr) => {
+                const evaluatedString = this.evalExpression(strExpr.trim());
+                return '"' + evaluatedString.toUpperCase() + '"'; // Convert to uppercase
+            });
+            
+            expr = expr.replace(/LCASE\(([^)]+)\)/g, (match, strExpr) => {
+                const evaluatedString = this.evalExpression(strExpr.trim());
+                return '"' + evaluatedString.toLowerCase()+ '"'; // Convert to lowercase
+            });
+        }
+
+        // Handle INT function
+        while (expr.includes("INT(")) {
+            expr = expr.replace(/INT\(([^)]+)\)/g, (match, numExpr) => {
+                const evaluatedNumber = this.evalExpression(numExpr.trim());
+                return Math.floor(evaluatedNumber); // Return integer part
+            });
+        }
+
+        // Handle RAND function
+        while (expr.includes("RAND(")) {
+            expr = expr.replace(/RAND\(([^)]+)\)/g, (match, numExpr) => {
+                const upperLimit = this.evalExpression(numExpr.trim());
+                return Math.random() * upperLimit; // Return a random float in [0,x)
+            });
+        }
 
         // Replace variables in the expression with their values
         expr = this.replaceVariables(expr);
-
-        // console.log(expr);
 
         // Regular expression to match 1D and 2D array references
         const arrayPattern = /([A-Za-z]+)\[(.+?)(?:,(\S+))?\]/g;
