@@ -100,5 +100,29 @@ StudentNames[1] &lt;- "Ali"
 NoughtsAndCrosses[2,3] &lt;- 'X'
 StudentNames[n+1] &lt;- StudentNames[n]</code></pre>
 
+<h3><strong>STRING</strong></h3>
+<pre><code>LEFT&lpar;&lt;string&gt;,&lt;length&gt;&rpar;
+RIGHT&lpar;&lt;string&gt;,&lt;length&gt;&rpar;
+MID&lpar;&lt;string&gt;,&lt;position&gt;,&lt;length&gt;&rpar;
+LENGTH&lpar;&lt;string&gt;&rpar;
+UCASE&lpar;&lt;string&gt;&rpar;
+LCASE&lpar;&lt;string&gt;&rpar;
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>LEFT&lpar;&quot;ABCDEFGH&quot;,3&rpar; // Returns &quot;ABC&quot;
+RIGHT&lpar;&quot;ABCDEFGH&quot;,3&rpar; // Returns &quot;FGH&quot;
+MID&lpar;&quot;ABCDEFGH&quot;,2,3&rpar; // Returns &quot;BCD&quot;
+LENGTH&lpar;"HELLO world"&rpar; // Returns 11
+UCASE&lpar;"HELLO world"&rpar; // Returns &quot;HELLO WORLD&quot;
+LCASE&lpar;"HELLO world"&rpar; // Returns &quot;hello world&quot;
+</code></pre>
+
+<h3><strong>RANDOM</strong></h3>
+<pre><code>RAND&lpar;&lt;number&gt;&rpar;
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>RAND&lpar;85&rpar; // Returns a real number between &#91;0,85&rpar;
+</code></pre>
+
 </body>
 </html>
