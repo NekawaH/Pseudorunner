@@ -96,9 +96,36 @@ class PseudoInterpreter {
             return ["BREAK"];
         } else if (line === "PASS") {
             return ["PASS"];
-        } else if (/^PROCEDURE\s+(\w+)\((.*)\)$/.test(line)) {
-            const match = line.match(/^PROCEDURE\s+(\w+)\((.*)\)$/);
-            return ["PROCEDURE_DEF", match[1], match[2]];
+        } else if (/^PROCEDURE\s+(\w+)\((.*?)\)$/.exec(line)) {
+            const match = /^PROCEDURE\s+(\w+)\((.*?)\)$/.exec(line);
+            const procedureName = match[1];
+            const rawArgs = match[2];
+            const parseArguments = (argString) => {
+                if (argString.trim() === '') return [];
+                const args = [];
+                let lastMode = "BYVAL"; // Default mode
+                argString.split(',').forEach(arg => {
+                    arg = arg.trim(); // Clean up whitespace
+                    let typePart = null;
+                    let varName = null;
+                    // Check for BYREF or BYVAL using a single if statement
+                    const modeMatch = /^(BYREF|BYVAL)?\s*(.*)$/.exec(arg);
+                    if (modeMatch) {
+                        const mode = modeMatch[1];
+                        varName = modeMatch[2].trim();
+                        lastMode = mode ? mode : lastMode; // Update lastMode or keep previous
+                    }
+                    // Split on the first colon to separate variable name from type
+                    if (varName.includes(':')) {
+                        [varName, typePart] = varName.split(':').map(s => s.trim());
+                    }
+    
+                    args.push([varName, typePart, lastMode]); // Append (varname, type, mode)
+                });
+                return args;
+            };
+            const args = parseArguments(rawArgs);
+            return ["PROCEDURE_DEF", procedureName, args];
         } else if (line === "ENDPROCEDURE") {
             return ["ENDPROCEDURE"];
         } else if (/^CALL\s+(\w+)\((.*)\)$/.test(line)) {
@@ -283,25 +310,23 @@ class PseudoInterpreter {
     */
 
     callFunction(funcName, args) {
-        // console.log(args);
         if (!this.functions[funcName]) {
             throw new Error(`Function ${funcName} not defined.`);
         }
     
         const funcDef = this.functions[funcName];
-        const { params, funcBody } = funcDef;
+        const funcParams = funcDef["defParams"];
+        const funcBody = funcDef["funcBody"];
     
         // Ensure the correct number of arguments
-        if (params.length !== args.length) {
-            throw new Error(`Expected ${params.length} arguments, got ${args.length}.`);
+        if (funcParams.length !== args.length) {
+            throw new Error(`Expected ${funcParams.length} arguments, got ${args.length}.`);
         }
     
         // Backup current variables and set up local scope for the function
         const savedVariables = { ...this.variables };
-        params.forEach(([paramName, paramType], index) => {
+        funcParams.forEach(([paramName, paramType], index) => {
             const argValue = this.evalExpression(args[index]);
-            console.log(argValue);
-            console.log(paramName);
             this.variables[paramName] = argValue; // Assign argument value to parameter name
         });
     
@@ -309,21 +334,54 @@ class PseudoInterpreter {
         this.globalReturnValue = null;
     
         // Execute function body
-        for (const statement of funcBody) {
-            this.execute([statement]);
-            if (this.globalReturnValue !== null) {
-                break; // Stop execution on RETURN
-            }
-        }
-    
+        this.execute(funcBody);
+
         // Restore previous variable state
         this.variables = savedVariables;
+
+        // Save return value
+        let returnValue = this.globalReturnValue;
+        this.globalReturnValue = null;;
     
         // Return the value set by RETURN statement
-        return this.globalReturnValue;
+        return returnValue;
+    }
+
+    callProcedure(procName, args) {
+        if (!this.procedures[procName]) {
+            throw new Error(`Procedure ${procName} not defined.`);
+        }
+        
+        const procDef = this.procedures[procName];
+        console.log(procDef);
+        const procParams = procDef["defParams"];
+        const procBody = procDef["procBody"];
+        console.log(procParams);
+        console.log(procBody);
+    
+        // Ensure the correct number of arguments
+        if (procParams.length !== args.length) {
+            throw new Error(`Expected ${procParams.length} arguments, got ${args.length}.`);
+        }
+
+        procParams.forEach(([paramName, paramType, paramValOrRef], index) => {
+            this.variables[paramName] = args[index]; // Assign argument value to parameter name
+        });
+
+        // Execute procedure body
+        for (const statement of procBody) {
+            this.execute([statement]);
+        }
+        procParams.forEach(([paramName, paramType, paramValOrRef], index) => {
+            console.log(paramValOrRef);
+            if (paramValOrRef === "BYREF") {
+                this.execute([["SET",args[index],this.variables[paramName]]]); // Return any altered argument values
+            }
+        });
+    
+        return;
     }
     
-
     evalExpression(expr) {
         expr = String(expr);
 
@@ -401,6 +459,7 @@ class PseudoInterpreter {
 
         // Replace variables in the expression with their values
         expr = this.replaceVariables(expr);
+        expr = this.replaceVariables(expr);
 
         // Regular expression to match 1D and 2D array references
         const arrayPattern = /([A-Za-z]+)\[(.+?)(?:,(\S+))?\]/g;
@@ -454,7 +513,6 @@ class PseudoInterpreter {
     parse(pseudocode) {
         const lines = pseudocode.trim().split("\n");
         const parsedLines = [];
-        let forCount = 0;
         console.log(lines);
     
         for (let i = 0; i < lines.length; i++) {
@@ -606,6 +664,8 @@ class PseudoInterpreter {
         let repeatCount;
         let ifCount;
         let currentBlock;
+        let procName;
+        let defParams;
     
         while (i < parsedCode.length) {
             const token = parsedCode[i];
@@ -616,8 +676,8 @@ class PseudoInterpreter {
                     break;
 
                 case "SET":
-                    // console.log(token[1]);
-                    // console.log(token[2]);
+                    console.log(token[1]);
+                    console.log(token[2]);
                     ref = this.parseReference(token[1]);
                     if (ref.length === 1) {
                         this.variables[ref[0]] = this.evalExpression(token[2]);
@@ -964,9 +1024,6 @@ class PseudoInterpreter {
                 
                 case "FUNCTION_DEF":
                     const [_, funcName, params, returnType] = token;
-
-                    console.log(params);
-                    console.log(returnType);
                     
                     // Collect all lines until "ENDFUNCTION" as the function body
                     const funcBody = [];
@@ -978,7 +1035,7 @@ class PseudoInterpreter {
                 
                     // Store function definition in functions object
                     this.functions[funcName] = {
-                        params: params,       // Array of [paramName, paramType]
+                        defParams: params,       // Array of [paramName, paramType]
                         returnType: returnType,
                         funcBody: funcBody,
                     };
@@ -991,8 +1048,36 @@ class PseudoInterpreter {
                     // Evaluate the return expression and store it as the global return value
                     this.globalReturnValue = this.evalExpression(token[1]);
                     return; // Exit immediately from function execution
+                
+                case "PROCEDURE_DEF":
+                    console.log(token);
+                    console.log(token[2]);
+                    procName = token[1];
+                    defParams = token[2];
+                
+                    // Collect procedure body
+                    const procBody = [];
+                    i++;
+                    while (parsedCode[i][0] !== "ENDPROCEDURE") {
+                        procBody.push(parsedCode[i]);
+                        i++;
+                    }
+                
+                    // Store procedure in the interpreter's procedures object
+                    this.procedures[procName] = { defParams, procBody: procBody };
+                    break;
+                    
+                case "ENDPROCEDURE":
+                    break;
 
+                case "CALL_PROCEDURE":
+                    procName = token[1];
+                    const args = token[2];
+                
+                    this.callProcedure(procName,args);
 
+                    break;
+ 
                 default:
                     throw new SyntaxError(`Unknown command: ${token[0]}`);
             }
