@@ -27,6 +27,36 @@
 <pre><code>SET &lt;identifier&gt; TO &lt;value&gt; (also support &lt;identifier&gt; &lt;- &lt;value&gt; and &lt;identifier&gt; = &lt;value&gt;)</code></pre>
 <p><strong>Example:</strong> <code>SET x TO 10</code>, <code>x &lt;- 10</code>, <code>x = 10</code></p>
 
+<h3><strong>WHILE</strong></h3>
+<pre><code>WHILE &lt;condition&gt; DO
+   &lt;statements&gt;
+ENDWHILE</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>WHILE count < 5 DO
+   OUTPUT count
+   count &lt;- count + 1
+ENDWHILE</code></pre>
+
+<h3><strong>REPEAT</strong></h3>
+<pre><code>REPEAT
+    &lt;statements&gt;
+UNTIL &lt;condition&gt;</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>count &lt;- 0
+REPEAT
+    OUTPUT count
+    count &lt;- count + 1
+UNTIL count = 5</code></pre>
+
+<h3><strong>FOR</strong></h3>
+<pre><code>FOR &lt;identifier&gt; &lt;- &lt;value1&gt; TO &lt;value2&gt; (also support FOR &lt;identifier&gt; = &lt;value1&gt; TO &lt;value2&gt;)
+   &lt;statements&gt;
+NEXT &lt;identifier&gt;</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>FOR i &lt;- 1 TO 5
+   OUTPUT i
+NEXT i</code></pre>
+
 <h3><strong>IF/ELSE IF/ELSE</strong></h3>
 <pre><code>IF &lt;condition&gt; THEN
     &lt;statements&gt;
@@ -44,25 +74,6 @@ ELSE
     OUTPUT 'x is equal to 10'
 ENDIF</code></pre>
 
-<h3><strong>WHILE</strong></h3>
-<pre><code>WHILE &lt;condition&gt; DO
-   &lt;statements&gt;
-ENDWHILE</code></pre>
-<p><strong>Example:</strong></p>
-<pre><code>WHILE count < 5 DO
-   OUTPUT count
-   count &lt;- count + 1
-ENDWHILE</code></pre>
-
-<h3><strong>FOR</strong></h3>
-<pre><code>FOR &lt;identifier&gt; &lt;- &lt;value1&gt; TO &lt;value2&gt; (also support FOR &lt;identifier&gt; = &lt;value1&gt; TO &lt;value2&gt;)
-   &lt;statements&gt;
-NEXT &lt;identifier&gt;</code></pre>
-<p><strong>Example:</strong></p>
-<pre><code>FOR i &lt;- 1 TO 5
-   OUTPUT i
-NEXT i</code></pre>
-
 <h3><strong>CASE</strong></h3>
 <pre><code>CASE OF &lt;identifier&gt;
     &ltvalue 1&gt; : &lt;statement&gt;
@@ -79,17 +90,6 @@ ENDCASE</code></pre>
     0 TO 59   : OUTPUT "Grade: F"
     OTHERWISE : OUTPUT "Score out of range"
 ENDCASE</code></pre>
-
-<h3><strong>REPEAT-UNTIL</strong></h3>
-<pre><code>REPEAT
-    &lt;statements&gt;
-UNTIL &lt;condition&gt;</code></pre>
-<p><strong>Example:</strong></p>
-<pre><code>count &lt;- 0
-REPEAT
-    OUTPUT count
-    count &lt;- count + 1
-UNTIL count = 5</code></pre>
 
 <h3><strong>ARRAY</strong></h3>
 <pre><code>DECLARE &lt;identifier&gt;:ARRAY[&lt;lower&gt;:&lt;upper&gt;] OF &ltdata type&gt;
