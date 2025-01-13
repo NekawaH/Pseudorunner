@@ -9,6 +9,7 @@ class PseudoInterpreter {
         this.ifCountTracker = 0;
         this.elseIfTracker = [0];
         this.inMultilineComment = false; // Track if we are inside a multiline comment
+        this.globalReturnValue = null;
     }
 
     tokenize(line) {
@@ -37,17 +38,6 @@ class PseudoInterpreter {
         } else if (line.startsWith("LEN")) {
             const match = line.match(/^LEN\((\w+)\)$/);
             return ["LEN", match[1]];
-        } else if (line.startsWith("DEFINE")) {
-            const match = line.match(/^DEFINE (\w+)\((.*)\)$/);
-            return ["DEFINE", match[1], match[2] ? match[2].split(", ").map((p) => p.trim()) : []];
-        } else if (line === "ENDDEFINE") {
-            return ["ENDDEFINE"];
-        } else if (line.startsWith("RETURN")) {
-            const match = line.match(/^RETURN (.+)$/);
-            return ["RETURN", match[1]];
-        } else if (line.startsWith("CALL")) {
-            const match = line.match(/^CALL (\w+)\((.*)\)$/);
-            return ["CALL", match[1], match[2] ? match[2].split(", ").map((p) => p.trim()) : []];
         } else if (line.startsWith("IF")) {
             const match = line.match(/^IF (.+) THEN$/);
             this.ifCountTracker++;
@@ -106,6 +96,34 @@ class PseudoInterpreter {
             return ["BREAK"];
         } else if (line === "PASS") {
             return ["PASS"];
+        } else if (/^PROCEDURE\s+(\w+)\((.*)\)$/.test(line)) {
+            const match = line.match(/^PROCEDURE\s+(\w+)\((.*)\)$/);
+            return ["PROCEDURE_DEF", match[1], match[2]];
+        } else if (line === "ENDPROCEDURE") {
+            return ["ENDPROCEDURE"];
+        } else if (/^CALL\s+(\w+)\((.*)\)$/.test(line)) {
+            const match = line.match(/^CALL\s+(\w+)\((.*)\)$/);
+            const args = match[2] ? match[2].split(",").map(a => a.trim()) : [];
+            return ["CALL_PROCEDURE", match[1], args];
+        } else if (/^FUNCTION\s+(\w+)\((.*?)\)\s+RETURNS\s+(\w+)$/.test(line)) {
+            const match = line.match(/^FUNCTION\s+(\w+)\((.*?)\)\s+RETURNS\s+(\w+)$/);
+            const functionName = match[1];
+            const rawArgs = match[2];
+            const returnType = match[3];
+            const parseArguments = (argString) => {
+                if (argString.trim() === '') return [];
+                return argString.split(',').map(arg => {
+                    const [name, type] = arg.split(':').map(s => s.trim());
+                    return [name, type];
+                });
+            };
+            const args = parseArguments(rawArgs);
+            return ["FUNCTION_DEF", functionName, args, returnType];
+        } else if (line === "ENDFUNCTION") {
+            return ["ENDFUNCTION"];
+        } else if (/^RETURN\s+(.*)$/.test(line)) {
+            const match = line.match(/^RETURN\s+(.*)$/);
+            return ["RETURN", match[1]];
         }
 
        throw new SyntaxError(`Unknown command: ${line}`);
@@ -264,6 +282,48 @@ class PseudoInterpreter {
     }
     */
 
+    callFunction(funcName, args) {
+        // console.log(args);
+        if (!this.functions[funcName]) {
+            throw new Error(`Function ${funcName} not defined.`);
+        }
+    
+        const funcDef = this.functions[funcName];
+        const { params, funcBody } = funcDef;
+    
+        // Ensure the correct number of arguments
+        if (params.length !== args.length) {
+            throw new Error(`Expected ${params.length} arguments, got ${args.length}.`);
+        }
+    
+        // Backup current variables and set up local scope for the function
+        const savedVariables = { ...this.variables };
+        params.forEach(([paramName, paramType], index) => {
+            const argValue = this.evalExpression(args[index]);
+            console.log(argValue);
+            console.log(paramName);
+            this.variables[paramName] = argValue; // Assign argument value to parameter name
+        });
+    
+        // Clear any previous return value
+        this.globalReturnValue = null;
+    
+        // Execute function body
+        for (const statement of funcBody) {
+            this.execute([statement]);
+            if (this.globalReturnValue !== null) {
+                break; // Stop execution on RETURN
+            }
+        }
+    
+        // Restore previous variable state
+        this.variables = savedVariables;
+    
+        // Return the value set by RETURN statement
+        return this.globalReturnValue;
+    }
+    
+
     evalExpression(expr) {
         expr = String(expr);
 
@@ -275,7 +335,7 @@ class PseudoInterpreter {
         expr = expr.replace(/NOT/g, '!');           // Not
         expr = expr.replace(/TRUE/g, 'true');       // True
         expr = expr.replace(/FALSE/g, 'false');     // False
-        expr = this.replaceSingleEquals(expr);
+        expr = this.replaceSingleEquals(expr);      // Equal to
 
         // Handle LENGTH, LEFT, RIGHT, MID functions
         while (expr.includes("LENGTH(")) {
@@ -359,6 +419,30 @@ class PseudoInterpreter {
 
         // Replace all array references in the expression
         expr = expr.replace(arrayPattern, replaceArrayReferences);
+        
+        // Detect user-defined function calls using regex (e.g., myFunc(arg1, arg2))
+        const userFuncRegex = /([A-Za-z_]\w*)\(([^()]*)\)/g;
+        let match;
+        
+        while ((match = userFuncRegex.exec(expr)) !== null) {
+            const fullMatch = match[0];   // e.g., "myFunc(a + 1, b)"
+            const funcName = match[1];   // e.g., "myFunc"
+            const argString = match[2];  // e.g., "a + 1, b"
+
+            if (this.functions[funcName]) {
+                // Split arguments by comma and evaluate each
+                const argValues = argString.split(",").map(arg => arg.trim());
+                
+                // Call the user-defined function and get its result
+                const result = this.callFunction(funcName, argValues);
+
+                // Replace function call in expression with its result
+                expr = expr.replace(fullMatch, result);
+                
+                // Reset regex index for further matches in modified expression
+                userFuncRegex.lastIndex = 0;
+            }
+        }
 
         try {
             return eval(expr); // Evaluate mathematical and logical expressions
@@ -375,7 +459,6 @@ class PseudoInterpreter {
     
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i].trim();
-            // console.log(line);
     
             // Handle multiline comments
             if (line.includes("/*")) {
@@ -396,12 +479,6 @@ class PseudoInterpreter {
             if (line.includes("#")) {
                 line = line.split("#")[0].trim();
             }
-            
-            line = line.trim();
-
-            // console.log(line);
-
-            if (!line) continue;
 
             const parsedLine = this.tokenize(line);
 
@@ -685,8 +762,8 @@ class PseudoInterpreter {
                     const funcBody = [];
                     i++;
                     while (parsedCode[i][0] !== "ENDDEFINE") {
-                    funcBody.push(parsedCode[i]);
-                    i++;
+                        funcBody.push(parsedCode[i]);
+                        i++;
                     }
                     this.functions[funcName] = { params, funcBody };
                     break;
@@ -694,9 +771,6 @@ class PseudoInterpreter {
                 case "CALL":
                     this.callFunction(token[1], token[2].map((arg) => this.evalExpression(arg)));
                     break;
-
-                case "RETURN":
-                    return this.evalExpression(token[1]);
                 */
 
                 case "WHILE":
@@ -708,7 +782,6 @@ class PseudoInterpreter {
                     let loopBody = [];
                     currentBlock = [];
                     while (!(parsedCode[i][0] === "ENDWHILE" && whileCount === 1)) {
-                        // console.log(parsedCode[i]);
                         if (parsedCode[i][0] === 'WHILE') {
                             whileCount++;
                             currentBlock.push(parsedCode[i]);
@@ -782,7 +855,6 @@ class PseudoInterpreter {
                     let repeatBody = [];
                     currentBlock = [];
                     while (!(parsedCode[i][0] === "UNTIL" && repeatCount === 1)) {
-                        // console.log(parsedCode[i]);
                         if (parsedCode[i][0] === 'WHILE') {
                             whileCount++;
                             currentBlock.push(parsedCode[i]);
@@ -827,8 +899,6 @@ class PseudoInterpreter {
                         i++;
                     }
                     repeatCondition = parsedCode[i][1];
-                    // console.log(repeatCondition);
-                    // console.log(repeatBody);
                     do {
                         for (const currentBlock of repeatBody) {
                             this.execute(currentBlock);
@@ -891,6 +961,37 @@ class PseudoInterpreter {
                         this.arrays[token[1]][i] = [];
                     }
                     break;
+                
+                case "FUNCTION_DEF":
+                    const [_, funcName, params, returnType] = token;
+
+                    console.log(params);
+                    console.log(returnType);
+                    
+                    // Collect all lines until "ENDFUNCTION" as the function body
+                    const funcBody = [];
+                    i++;
+                    while (i < parsedCode.length && parsedCode[i][0] !== "ENDFUNCTION") {
+                        funcBody.push(parsedCode[i]);
+                        i++;
+                    }
+                
+                    // Store function definition in functions object
+                    this.functions[funcName] = {
+                        params: params,       // Array of [paramName, paramType]
+                        returnType: returnType,
+                        funcBody: funcBody,
+                    };
+                    break;
+
+                case "ENDFUNCTION":
+                    break;
+                
+                case "RETURN":
+                    // Evaluate the return expression and store it as the global return value
+                    this.globalReturnValue = this.evalExpression(token[1]);
+                    return; // Exit immediately from function execution
+
 
                 default:
                     throw new SyntaxError(`Unknown command: ${token[0]}`);
@@ -898,37 +999,6 @@ class PseudoInterpreter {
 
             i++; 
         }
-    }
-
-    callFunction(funcName, args) {
-        if (!this.functions[funcName]) {
-            throw new Error(`Function ${funcName} not defined.`);
-        }
-
-        const funcDef = this.functions[funcName];
-        const { params, funcBody } = funcDef;
-
-        if (params.length !== args.length) {
-            throw new Error(`Expected ${params.length} arguments, got ${args.length}.`);
-        }
-
-        const savedVariables = { ...this.variables };
-
-        params.forEach((param, index) => {
-            this.variables[param] = args[index];
-        });
-
-        let returnValue = null;
-        for (const statement of funcBody) {
-            const result = this.execute([statement]);
-            if (result !== undefined) {
-                returnValue = result;
-                break;
-            }
-        }
-
-        this.variables = savedVariables;
-        return returnValue;
     }
 }
 
