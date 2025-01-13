@@ -140,5 +140,24 @@ ENDFUNCTION
 // Outputs 3
 OUTPUT add&lpar;1,2&rpar;</code></pre>
 
+<h3><strong>PROCEDURE</strong></h3>
+<pre><code>PROCEDURE &lt;identifier&gt;&lpar;&lt;BYVAL/BYREF&gt; &lt;param&gt; : &lt;data type&gt; ...&rpar;
+    &lt;statements&gt;
+    ...
+ENDPROCEDURE
+CALL &lt;identifier&gt;&lpar;&lt;params&gt;&rpar;
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>PROCEDURE swap&lpar;BYREF x : REAL, y : REAL&rpar;
+    temp &lt;- x
+    x &lt;- y
+    y &lt;- temp
+    OUTPUT x, y
+ENDPROCEDURE
+a &lt;- 1
+b &lt;- 2
+CALL swap&lpar;a,b&rpar;
+OUTPUT a, b // 2, 1</code></pre>
+
 </body>
 </html>
