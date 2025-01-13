@@ -152,12 +152,11 @@ CALL &lt;identifier&gt;&lpar;&lt;params&gt;&rpar;
     temp &lt;- x
     x &lt;- y
     y &lt;- temp
-    OUTPUT x, y
 ENDPROCEDURE
 a &lt;- 1
 b &lt;- 2
 CALL swap&lpar;a,b&rpar;
-OUTPUT a, b // 2, 1</code></pre>
+OUTPUT a, &quot; &quot;, b // Outputs 2 1</code></pre>
 
 </body>
 </html>
