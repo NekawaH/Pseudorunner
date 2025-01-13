@@ -21,7 +21,7 @@
 
 <h3><strong>OUTPUT</strong></h3>
 <pre><code>OUTPUT &lt;value&gt;</code></pre>
-<p><strong>Example:</strong> <code>OUTPUT 'hello world'</code>, <code>OUTPUT 114514</code>, <code>OUTPUT totalScore</code></p>
+<p><strong>Example:</strong> <code>OUTPUT "hello world"</code>, <code>OUTPUT 114514</code>, <code>OUTPUT totalScore</code></p>
 
 <h3><strong>SET VALUE</strong></h3>
 <pre><code>SET &lt;identifier&gt; TO &lt;value&gt; (also support &lt;identifier&gt; &lt;- &lt;value&gt; and &lt;identifier&gt; = &lt;value&gt;)</code></pre>
