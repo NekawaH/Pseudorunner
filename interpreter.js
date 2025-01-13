@@ -538,6 +538,8 @@ class PseudoInterpreter {
                 line = line.split("#")[0].trim();
             }
 
+            if (line === "") continue;
+
             const parsedLine = this.tokenize(line);
 
             // Preprocess ELSE IF into ELSE and IF
