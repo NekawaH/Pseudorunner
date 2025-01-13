@@ -91,7 +91,7 @@ REPEAT
     count &lt;- count + 1
 UNTIL count = 5</code></pre>
 
-<h3><strong>ARRAYS</strong></h3>
+<h3><strong>ARRAY</strong></h3>
 <pre><code>DECLARE &lt;identifier&gt;:ARRAY[&lt;lower&gt;:&lt;upper&gt;] OF &ltdata type&gt;
 DECLARE &lt;identifier&gt;:ARRAY[&lt;lower1&gt;:&lt;upper1&gt;,&lt;lower2&gt;:&lt;upper2&gt;] OF &ltdata type&gt;
 </code></pre>
@@ -125,6 +125,20 @@ LCASE&lpar;"HELLO world"&rpar; // Returns &quot;hello world&quot;
 <p><strong>Example:</strong></p>
 <pre><code>RAND&lpar;85&rpar; // Returns a real number between &#91;0,85&rpar;
 </code></pre>
+
+<h3><strong>FUNCTION</strong></h3>
+<pre><code>FUNCTION &lt;identifier&gt;&lpar;&lt;param&gt; : &lt;data type&gt;&rpar; RETURNS &lt;data type&gt;
+    &lt;statements&gt;
+    ...
+    RETURN &lt;value&gt;
+ENDFUNCTION
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>FUNCTION add&lpar;x : REAL, y : REAL&rpar; RETURNS REAL
+    RETURN x + y
+ENDFUNCTION
+// Outputs 3
+OUTPUT add&lpar;1,2&rpar;</code></pre>
 
 </body>
 </html>
