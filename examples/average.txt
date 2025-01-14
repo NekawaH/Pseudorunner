@@ -1,4 +1,4 @@
-DECLARE Number : ARRAY[1:100] OF INT
+DECLARE Number : ARRAY[1:100] OF INTEGER
 INPUT n
 FOR Index <- 1 TO n
     INPUT Number[Index]
