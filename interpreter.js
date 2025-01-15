@@ -343,7 +343,6 @@ class PseudoInterpreter {
         this.execute(procBody);
         
         procParams.forEach(([paramName, paramType, paramValOrRef], index) => {
-            console.log(paramValOrRef);
             if (paramValOrRef === "BYREF" && this.isReference(args[index])) {
                 this.execute([["SET",args[index],this.tempArgs[this.tempArgs.length - 1][paramName]]]); // Return any altered argument values
             }
@@ -436,9 +435,9 @@ class PseudoInterpreter {
         }
 
         // Replace variables in the expression with their values
-        expr = this.replaceVariables(expr);
-        expr = this.replaceVariables(expr);
-        expr = this.replaceVariables(expr);
+        do {
+            expr = this.replaceVariables(expr);
+        } while (expr !== this.replaceVariables(expr))
 
         // Regular expression to match 1D and 2D array references
         const arrayPattern = /([A-Za-z]+)\[(.+?)(?:,(\S+))?\]/g;
@@ -613,7 +612,6 @@ class PseudoInterpreter {
                 const iteratorName = parsedLine[1];
                 let initialLine = ["SET", iteratorName, parsedLine[2]]; // Initialize iterator
                 parsedLines.push(initialLine);
-                console.log(parsedLine[3]);
                 let whileLine = ["WHILE", iteratorName + " <= " + parsedLine[3]]; // While line
                 parsedLines.push(whileLine);
             }
@@ -703,9 +701,7 @@ class PseudoInterpreter {
                     
 
                 case "IF":
-                    console.log(token[1]);
                     const condition = this.evalExpression(token[1]);
-                    console.log(condition);
                     i++;
                     let executableCode = [];
                     ifCount = 1;
@@ -971,8 +967,6 @@ class PseudoInterpreter {
                     return; // Exit immediately from function execution
                 
                 case "PROCEDURE_DEF":
-                    console.log(token);
-                    console.log(token[2]);
                     procName = token[1];
                     defParams = token[2];
                 
