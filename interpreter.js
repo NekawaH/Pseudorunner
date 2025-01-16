@@ -154,13 +154,16 @@ class PseudoInterpreter {
         // First pass: replace using topArgs
         expr = expr.replace(/\b\w+\b/g, (match) => {
             const topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
+            console.log(topArgs);
             return topArgs && topArgs[match] !== undefined ? topArgs[match] : match;
         });
+        console.log(expr);
     
         // Second pass: replace using this.variables on the interim result
         expr = expr.replace(/\b\w+\b/g, (match) => {
             return this.variables[match] !== undefined ? this.variables[match] : match;
         });
+        console.log(expr);
     
         return expr;
     }
@@ -299,11 +302,12 @@ class PseudoInterpreter {
             throw new Error(`Expected ${funcParams.length} arguments, got ${args.length}.`);
         }
         
-        this.tempArgs.push({});
+        let storedArgs = {};
         funcParams.forEach(([paramName, paramType], index) => {
             const argValue = this.evalExpression(args[index]);
-            this.tempArgs[this.tempArgs.length - 1][paramName] = argValue; // Assign argument value to parameter name
+            storedArgs[paramName] = argValue; // Assign argument value to parameter name
         });
+        this.tempArgs.push(storedArgs);
     
         // Clear any previous return value
         this.globalReturnValue = null;
@@ -334,10 +338,15 @@ class PseudoInterpreter {
             throw new Error(`Expected ${procParams.length} arguments, got ${args.length}.`);
         }
 
-        this.tempArgs.push({});
+        let storedArgs = {};
         procParams.forEach(([paramName, paramType, paramValOrRef], index) => {
-            this.tempArgs[this.tempArgs.length - 1][paramName] = args[index]; // Assign argument value to parameter name
+            if (this.isReference(args[index])) {
+                storedArgs[paramName] = args[index];
+            } else {
+                storedArgs[paramName] = this.evalExpression(args[index]);
+            }
         });
+        this.tempArgs.push(storedArgs);
 
         // Execute procedure body
         this.execute(procBody);
