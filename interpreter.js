@@ -154,16 +154,13 @@ class PseudoInterpreter {
         // First pass: replace using topArgs
         expr = expr.replace(/\b\w+\b/g, (match) => {
             const topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
-            console.log(topArgs);
             return topArgs && topArgs[match] !== undefined ? topArgs[match] : match;
         });
-        console.log(expr);
     
         // Second pass: replace using this.variables on the interim result
         expr = expr.replace(/\b\w+\b/g, (match) => {
             return this.variables[match] !== undefined ? this.variables[match] : match;
         });
-        console.log(expr);
     
         return expr;
     }
@@ -381,7 +378,6 @@ class PseudoInterpreter {
         expr = expr.replace(/MOD/g, '%');     // False
         expr = this.replaceSingleEquals(expr);      // Equal to
 
-
         // Handle LENGTH, LEFT, RIGHT, MID functions
         while (expr.includes("LENGTH(")) {
             expr = expr.replace(/LENGTH\(([^)]+)\)/g, (match, strExpr) => {
@@ -392,16 +388,16 @@ class PseudoInterpreter {
 
         while (expr.includes("LEFT(")) {
             expr = expr.replace(/LEFT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
-                const str = String(this.evalExpression(strExpr.trim()));
+                const str = this.removeQuotationMark(String(this.evalExpression(strExpr.trim())));
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
-                console.log(str);
                 return '"' + String(this.evalLeft(str,len)) + '"';
             });
+            console.log(expr);
         }
 
         while (expr.includes("RIGHT(")) {
             expr = expr.replace(/RIGHT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
-                const str = String(this.evalExpression(strExpr.trim()));
+                const str = this.removeQuotationMark(String(this.evalExpression(strExpr.trim())));
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
                 return '"' + String(this.evalRight(str,len)) + '"';
             });
@@ -409,7 +405,7 @@ class PseudoInterpreter {
 
         while (expr.includes("MID(")) {
             expr = expr.replace(/MID\(([^,]+),\s*([^\s,]+),\s*([^\)]+)\)/g, (match, strExpr, startExpr, lenExpr) => {
-                const str = String(this.evalExpression(strExpr.trim()));
+                const str = this.removeQuotationMark(String(this.evalExpression(strExpr.trim())));
                 const start = parseInt(this.evalExpression(startExpr.trim()));
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
                 return '"' + String(this.evalMid(str,start,len)) + '"';
@@ -419,12 +415,12 @@ class PseudoInterpreter {
         // Handle UCASE and LCASE functions
         while (expr.includes("UCASE(") || expr.includes("LCASE(")) {
             expr = expr.replace(/UCASE\(([^)]+)\)/g, (match, strExpr) => {
-                const evaluatedString = this.evalExpression(strExpr.trim());
+                const evaluatedString = this.removeQuotationMark(this.evalExpression(strExpr.trim()));
                 return '"' + evaluatedString.toUpperCase() + '"'; // Convert to uppercase
             });
             
             expr = expr.replace(/LCASE\(([^)]+)\)/g, (match, strExpr) => {
-                const evaluatedString = this.evalExpression(strExpr.trim());
+                const evaluatedString = this.removeQuotationMark(this.evalExpression(strExpr.trim()));
                 return '"' + evaluatedString.toLowerCase()+ '"'; // Convert to lowercase
             });
         }
