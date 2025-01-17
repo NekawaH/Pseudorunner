@@ -2,7 +2,7 @@
 <html lang="en">
 <body>
 
-<h1>PSEUDORUNNER by NekawaH</h1>
+<h1>PSEUDORUNNER by NekawaH and inkalbert</h1>
 
 <h2>Instructions:</h2>
 <ol>
