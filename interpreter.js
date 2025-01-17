@@ -381,7 +381,7 @@ class PseudoInterpreter {
         // Handle LENGTH, LEFT, RIGHT, MID functions
         while (expr.includes("LENGTH(")) {
             expr = expr.replace(/LENGTH\(([^)]+)\)/g, (match, strExpr) => {
-                const evaluatedString = this.evalExpression(strExpr.trim());
+                const evaluatedString = this.removeQuotationMark(this.evalExpression(strExpr.trim()));
                 return evaluatedString.length;
             });
         }
