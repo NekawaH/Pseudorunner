@@ -378,6 +378,7 @@ class PseudoInterpreter {
         expr = expr.replace(/TRUE/g, 'true');       // True
         expr = expr.replace(/FALSE/g, 'false');     // False
         expr = expr.replace(/\^/g, '**');           // Exponentiation
+        expr = expr.replace(/MOD/g, '%');     // False
         expr = this.replaceSingleEquals(expr);      // Equal to
 
 
@@ -393,6 +394,7 @@ class PseudoInterpreter {
             expr = expr.replace(/LEFT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
                 const str = String(this.evalExpression(strExpr.trim()));
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
+                console.log(str);
                 return '"' + String(this.evalLeft(str,len)) + '"';
             });
         }
