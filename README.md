@@ -2,7 +2,7 @@
 <html lang="en">
 <body>
 
-<h1>PSEUDORUNNER by NekawaH and inkalbert</h1>
+<h1>PSEUDORUNNER by NekawaH</h1>
 
 <h2>Instructions:</h2>
 <ol>
@@ -14,6 +14,20 @@
 <p>(Only files <code>index.html</code>, <code>styles.css</code>, and <code>interpreter.js</code> are necessary)</p>
 
 <h2>Supported Syntax:</h2>
+<h3><strong>OPERATORS</strong></h3>
+<pre><code>a + b     // Addition
+a - b     // Subtraction
+a * b     // Multiplication
+a / b     // Division
+a ^ b     // Power
+a DIV b   // Floor Division
+a MOD b   // Remainder
+a == b    // Equal
+a <> b    // Not Equal To
+a > b     // Greater Than
+a < b     // Less Than
+a >= b    // Greater Than or Equal To
+a <= b    // Less Than or Equal To</code></pre>
 
 <h3><strong>INPUT</strong></h3>
 <pre><code>INPUT &lt;identifier&gt;</code></pre>
@@ -23,8 +37,8 @@
 <pre><code>OUTPUT &lt;value&gt;</code></pre>
 <p><strong>Example:</strong> <code>OUTPUT "hello world"</code>, <code>OUTPUT 114514</code>, <code>OUTPUT totalScore</code></p>
 
-<h3><strong>SET VALUE</strong></h3>
-<pre><code>SET &lt;identifier&gt; TO &lt;value&gt; (also support &lt;identifier&gt; &lt;- &lt;value&gt; and &lt;identifier&gt; = &lt;value&gt;)</code></pre>
+<h3><strong>ASSIGNMENT</strong></h3>
+<pre><code>SET &lt;identifier&gt; TO &lt;value&gt; &lpar;also support &lt;identifier&gt; &lt;- &lt;value&gt; and &lt;identifier&gt; = &lt;value&gt;&rpar;</code></pre>
 <p><strong>Example:</strong> <code>SET x TO 10</code>, <code>x &lt;- 10</code>, <code>x = 10</code></p>
 
 <h3><strong>WHILE</strong></h3>
