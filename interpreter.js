@@ -367,16 +367,17 @@ class PseudoInterpreter {
         }
 
         // Replace logical and comparison operators
-        expr = expr.replace(/(?<!&)&(?!&)/g, '+');  // Concatenation
-        expr = expr.replace(/<>/g, '!=');           // Not equal to
-        expr = expr.replace(/\bAND\b/g, '&&');      // And
-        expr = expr.replace(/OR/g, '||');           // Or
-        expr = expr.replace(/NOT/g, '!');           // Not
-        expr = expr.replace(/TRUE/g, 'true');       // True
-        expr = expr.replace(/FALSE/g, 'false');     // False
-        expr = expr.replace(/\^/g, '**');           // Exponentiation
-        expr = expr.replace(/MOD/g, '%');           // Remainder
-        expr = this.replaceSingleEquals(expr);      // Equal to
+        expr = expr.replace(/(?<!&)&(?!&)/g, '+');                          // String Concatenation
+        expr = expr.replace(/<>/g, '!=');                                   // Not equal to
+        expr = expr.replace(/\bAND\b/g, '&&');                              // And
+        expr = expr.replace(/OR/g, '||');                                   // Or
+        expr = expr.replace(/NOT/g, '!');                                   // Not
+        expr = expr.replace(/TRUE/g, 'true');                               // True
+        expr = expr.replace(/FALSE/g, 'false');                             // False
+        expr = expr.replace(/\^/g, '**');                                   // Exponentiation
+        expr = expr.replace(/MOD/g, '%');                                   // Remainder
+        expr = expr.replace(/(\w+)\s+DIV\s+(\w+)/g, 'Math.floor($1 / $2)'); // Floor division
+        expr = this.replaceSingleEquals(expr);                              // Equal to
 
         // Handle LENGTH, LEFT, RIGHT, MID functions
         while (expr.includes("LENGTH(")) {
