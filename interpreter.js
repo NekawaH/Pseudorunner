@@ -375,7 +375,7 @@ class PseudoInterpreter {
         expr = expr.replace(/TRUE/g, 'true');       // True
         expr = expr.replace(/FALSE/g, 'false');     // False
         expr = expr.replace(/\^/g, '**');           // Exponentiation
-        expr = expr.replace(/MOD/g, '%');     // False
+        expr = expr.replace(/MOD/g, '%');           // Remainder
         expr = this.replaceSingleEquals(expr);      // Equal to
 
         // Handle LENGTH, LEFT, RIGHT, MID functions
