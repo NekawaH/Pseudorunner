@@ -8,7 +8,7 @@ class PseudoInterpreter {
         this.functions = {};
         this.ifCountTracker = 0;
         this.elseIfTracker = [0];
-        this.inMultilineComment = false; // Track if we are inside a multiline comment
+        this.inMultilineComment = false;
         this.globalReturnValue = null;
         this.tempArgs = [];
     }
@@ -82,6 +82,8 @@ class PseudoInterpreter {
         } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
             const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
             return ["DECLARE_2D_ARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], [parseInt(match[4], 10), parseInt(match[5], 10)], match[6]];
+        } else if (line.startsWith("DECLARE")) {
+            return ["DECLARE_VAR"];
         } else if (line === "CONTINUE") {
             return ["CONTINUE"];
         } else if (line === "BREAK") {
@@ -945,6 +947,9 @@ class PseudoInterpreter {
                     for (let i = 0; i < 114514; i++) {
                         this.arrays[token[1]][i] = [];
                     }
+                    break;
+
+                case "DECLARE_VAR":
                     break;
                 
                 case "FUNCTION_DEF":
