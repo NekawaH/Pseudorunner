@@ -6,6 +6,7 @@ class PseudoInterpreter {
         this.arrays = {};
         this.procedures = {};
         this.functions = {};
+        this.files = {};
         this.ifCountTracker = 0;
         this.elseIfTracker = [0];
         this.inMultilineComment = false;
@@ -144,6 +145,18 @@ class PseudoInterpreter {
         } else if (/^RETURN\s+(.*)$/.test(line)) {
             const match = line.match(/^RETURN\s+(.*)$/);
             return ["RETURN", match[1]];
+        } else if (/^OPENFILE\s+(.*?)\s+FOR\s+(.*)$/.test(line)) {
+            const match = line.match(/^OPENFILE\s+(.*?)\s+FOR\s+(.*)$/);
+            return ["OPENFILE", match[1], match[2]];
+        } else if (/^READFILE\s+(.*?),\s*(.*)$/.test(line)) {
+            const match = line.match(/^READFILE\s+(.*?),\s*(.*)$/);
+            return ["READFILE", match[1], match[2]];
+        } else if (/^WRITEFILE\s+(.*?),\s*(.*)$/.test(line)) {
+            const match = line.match(/^WRITEFILE\s+(.*?),\s*(.*)$/);
+            return ["WRITEFILE", match[1], match[2]];
+        } else if (/^CLOSEFILE\s+(.*)$/.test(line)) {
+            const match = line.match(/^CLOSEFILE\s+(.*)$/);
+            return ["CLOSEFILE", match[1]];
         }
 
        throw new SyntaxError(`Unknown command: ${line}`);
@@ -395,7 +408,6 @@ class PseudoInterpreter {
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
                 return '"' + String(this.evalLeft(str,len)) + '"';
             });
-            console.log(expr);
         }
 
         while (expr.includes("RIGHT(")) {
@@ -441,6 +453,16 @@ class PseudoInterpreter {
             expr = expr.replace(/RAND\(([^)]+)\)/g, (match, numExpr) => {
                 const upperLimit = this.evalExpression(numExpr.trim());
                 return Math.random() * upperLimit; // Return a random float in [0,x)
+            });
+        }
+
+        // Handle EOF function (File Management)
+        while (expr.includes("EOF(")) {
+            expr = expr.replace(/EOF\(([^)]+)\)/g, (match, fileName) => {
+                fileName = this.removeQuotationMark(fileName);
+                let file = this.files[fileName];
+                let fileLines = file[1].split("\n");
+                return file[0] >= fileLines.length ? 1 : 0;
             });
         }
 
@@ -654,6 +676,10 @@ class PseudoInterpreter {
         let procName;
         let defParams;
         let topArgs;
+        let file;
+        let fileLine;
+        let fileLines;
+        let fileName;
     
         while (i < parsedCode.length) {
             const token = parsedCode[i];
@@ -1002,10 +1028,46 @@ class PseudoInterpreter {
                     procName = token[1];
                     const args = token[2];
                 
-                    this.callProcedure(procName,args);
+                    this.callProcedure(procName, args);
 
                     break;
- 
+
+                case "OPENFILE":
+                    fileName = this.removeQuotationMark(token[1]);
+                    file = this.files[fileName];
+                    if (token[2] === "READ") {
+                        this.files[fileName] = [0, file[1]];
+                    } else if (token[2] === "WRITE") {
+                        this.files[fileName] = [0,""];
+                    } else if (token[2] === "APPEND") {
+                        let fileLines = file[1].split("\n");
+                        this.files[fileName] = [fileLines.length - 1, file[1]];
+                    }
+                    break;
+
+                case "READFILE":
+                    fileName = this.removeQuotationMark(token[1]);
+                    file = this.files[fileName];
+                    fileLines = file[1].split("\n");
+                    fileLine = '"' + fileLines[file[0]] + '"';
+                    this.execute([["SET", token[2], fileLine]]);
+                    this.files[fileName] = [file[0] + 1, file[1]];
+                    break;
+
+                case "WRITEFILE":
+                    fileName = this.removeQuotationMark(token[1]);
+                    file = this.files[fileName];
+                    fileLines = file[1].split("\n");
+                    fileLine = fileLines[file[0]];
+                    let newFileContent = file[1] + this.removeQuotationMark(this.evalExpression(token[2])) + "\n";
+                    this.files[fileName] = [file[0] + 1, newFileContent];
+                    break;
+
+                case "CLOSEFILE":
+                    fileName = this.removeQuotationMark(token[1]);
+                    this.files[fileName][0] = 0;
+                    break;   
+
                 default:
                     throw new SyntaxError(`Unknown command: ${token[0]}`);
             }
