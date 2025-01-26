@@ -1,0 +1,12 @@
+OPENFILE "File.txt" FOR WRITE
+WRITEFILE "File.txt", "hello world"
+WRITEFILE "File.txt", "lets learn pseudocode"
+CLOSEFILE "File.txt"
+OPENFILE "File.txt" FOR READ
+
+WHILE NOT EOF("File.txt") DO
+    READFILE "File.txt", Line
+    OUTPUT Line
+ENDWHILE
+
+CLOSEFILE "File.txt"
