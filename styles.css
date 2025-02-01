@@ -1,7 +1,7 @@
 body {
-    font-family: 'Courier New', Courier, monospace;
-    background-color: #1e1e1e; /* Dark background */
-    color: #f8f8f2; /* Light text */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    background-color: #ffffff; /* Dark background */
+    color: #ffffff; /* Light text */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -11,16 +11,21 @@ body {
 .container {
     display: flex;
     flex-direction: column;
-    width: 80%;
+    position:relative;
+    left:0px;
+    top:-9px;
+    width: 100%;
+    height:670px;
+
     max-width: 1200px;
-    border: 1px solid #44475a; /* Darker border */
-    border-radius: 8px;
+    border: 1.5px solid #c6d0d8; /* Darker border */
+    border-radius: 0px;
     overflow: hidden;
 }
 
 h1 {
     text-align: center;
-    color: #50fa7b; /* Greenish title */
+    color: #2e2a2a; /* Greenish title */
 }
 
 .textboxes {
@@ -29,32 +34,116 @@ h1 {
 
 .textbox {
     width: 50%; /* Each textbox takes half the width */
-    padding: 10px;
+    padding: 9px;
+    position:relative;
+
+    left:0px;
+    top:0px;
     border: none;
     outline: none;
     font-size: 16px;
+    font-family: 'Courier New', Courier, monospace;
+
 }
 
 .input-box {
-    background-color: #282a36; /* Darker input area */
-    color: #ffffff; /* White text for input box */
+    background-color: #f3f6f9; /* Darker input area */
+    color: #2e3135; /* White text for input box */
+    border: 1px solid #c6d0d8; /* Darker border */
+    border-radius: 8px;
+    position:relative;
+    height:690px;
+    left:-4px;
+    font-weight:bold;
 }
 
 .output-box {
-    background-color: #21222c; /* Even darker output area */
-    color: #ffffff; /* White text for output box */
+    background-color: #f3f6f9; /* Even darker output area */
+    color: #f3f6f9; /* White text for output box */
+    border: 1px solid #c6d0d8; /* Darker border */
+    border-radius: 8px;
+    position:relative;
+    left:3px;
+    width: 50%;
+    font-weight:bold;
+}
+.list {
+
+    background-color: #2b7fd3;
+    position:absolute;
+    left:0;
+    width:60px;
+    height:104vh;
 }
 
-button {
-    padding: 10px 20px;
-    margin-top: 10px;
-    cursor: pointer;
-    background-color: #bd93f9; /* Purple button */
-    color: #fff; /* White text */
+.menu-container {
+    position: relative;
+    width: 200px;
+    height: 100%;
+    right:50px;
+    top:-10px;
+    background-color: #f1f1f1;
+}
+
+.menu-toggle {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #333;
+    color: #fff;
     border: none;
+    cursor: pointer;
+}
+
+.menu-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.payload{
+    width:100px;
+    background-color: #ececec;
     border-radius: 5px;
 }
 
-button:hover {
-    background-color: #ff79c6; /* Pink hover effect */
+
+.menu-items li {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+.menu-items li a {
+    text-decoration: none;
+    color: #333;
+}
+
+.menu-items li a:hover {
+    color: #f00;
+}
+.execute {
+    padding: 10px;
+    display: block;
+    padding: 10px 20px;
+    margin-top: 10px;
+    cursor: pointer;
+    background-color: #f3f6f9; /* Purple button */
+    color: #1c1f23; /* White text */
+    weight:bold;
+    outline: 1px;
+    position: relative;
+    top:1px;
+    right:0px;
+    border-radius: 5px;
+    width: 100.3%;
+}
+.main-container{
+    display: flex;
+    flex-direction: column;
+    width: 80%;
+    position:relative;
+    left:-50px;
+    height:100vh;
+}
+.execute:hover {
+    background-color: #e2e6e6; /* grey hover effect */
 }

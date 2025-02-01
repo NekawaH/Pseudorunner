@@ -8,16 +8,30 @@
 </head>
 <body>
 
-<div class="container">
-    <h1>Pseudocode Interpreter</h1>
-    <div class="textboxes">
-        <textarea id="inputBox" class="textbox input-box" rows="20" placeholder="Enter your pseudocode here..."></textarea>
-        <textarea id="outputBox" class="textbox output-box" rows="20" placeholder="Output will be displayed here..." readonly></textarea>
+<div class="menu-container">
+    <button id="clicker" onclick="cl()" class="menu-toggle">菜单</button>
+    <ul id="mi" class="menu-items">
+        <li><a class="payload" href="#">菜单项1</a></li>
+        <li><a class="payload" href="#">idk</a></li>
+        <li><a class="payload" href="credits.html">credits</a></li>
+    </ul>
+</div>
+<div class="main-container">
+    <div class="container">
+      <h1>Pseudocode Interpreter</h1>
+      <div class="textboxes">
+          <textarea id="inputBox" class="textbox input-box" rows="20" placeholder="Enter your pseudocode here..."></textarea>
+          <textarea id="outputBox" class="textbox output-box" rows="20" placeholder="Output will be displayed here..." readonly></textarea>
+       </div>
+
     </div>
-    <button onclick="runPseudocode()">Run Pseudocode</button>
+    <button class="execute" onclick="runPseudocode()">Run Pseudocode</button>
 </div>
 
 <script src="interpreter.js"></script>
 <script src="indentation.js"></script>
+<script src="list.js"></script>
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </body>
 </html>
