@@ -1,12 +1,20 @@
+PROCEDURE PrintFile(file:STRING)
+    OPENFILE file FOR READ
+    WHILE NOT EOF(file) DO
+        READFILE file, Line
+        OUTPUT Line
+    ENDWHILE
+    CLOSEFILE file
+ENDPROCEDURE
+
 OPENFILE "File.txt" FOR WRITE
 WRITEFILE "File.txt", "hello world"
 WRITEFILE "File.txt", "lets learn pseudocode"
 CLOSEFILE "File.txt"
-OPENFILE "File.txt" FOR READ
 
-WHILE NOT EOF("File.txt") DO
-    READFILE "File.txt", Line
-    OUTPUT Line
-ENDWHILE
-
+OPENFILE "File.txt" FOR APPEND
+WRITEFILE "File.txt", "new line"
+WRITEFILE "File.txt", "another line"
 CLOSEFILE "File.txt"
+
+CALL PrintFile("File.txt")
