@@ -28,8 +28,11 @@ class PseudoInterpreter {
             return ["ELSE"];
         } else if (line === "ENDIF") {
             return ["ENDIF"];
-        } else if (line.startsWith("WHILE")) {
+        } else if ((/^WHILE (.+) DO$/).test(line)) {
             const match = line.match(/^WHILE (.+) DO$/);
+            return ["WHILE", match[1]];
+        } else if ((/^WHILE (.+)$/).test(line)) {
+            const match = line.match(/^WHILE (.+)$/);
             return ["WHILE", match[1]];
         } else if (line === "ENDWHILE") {
             return ["ENDWHILE"];
@@ -258,9 +261,9 @@ class PseudoInterpreter {
     }
 
     removeQuotationMark(expr) {
-        let expr_string = String(expr);
-        if ((expr_string.startsWith('"') && expr_string.endsWith('"')) || (expr_string.startsWith("'") && expr_string.endsWith("'"))) {
-            return expr_string.slice(1, -1);
+        let exprString = String(expr);
+        if ((exprString.startsWith('"') && exprString.endsWith('"')) || (exprString.startsWith("'") && exprString.endsWith("'"))) {
+            return exprString.slice(1, -1);
         } else {
             return expr;
         }
@@ -459,7 +462,7 @@ class PseudoInterpreter {
         // Handle EOF function (File Management)
         while (expr.includes("EOF(")) {
             expr = expr.replace(/EOF\(([^)]+)\)/g, (match, fileName) => {
-                fileName = this.removeQuotationMark(fileName);
+                fileName = this.removeQuotationMark(this.evalExpression(fileName));
                 let file = this.files[fileName];
                 let fileLines = file[1].split("\n");
                 return file[0] >= fileLines.length ? 1 : 0;
@@ -1033,7 +1036,7 @@ class PseudoInterpreter {
                     break;
 
                 case "OPENFILE":
-                    fileName = this.removeQuotationMark(token[1]);
+                    fileName = this.removeQuotationMark(this.evalExpression(token[1]));
                     file = this.files[fileName];
                     if (token[2] === "READ") {
                         this.files[fileName] = [0, file[1]];
@@ -1046,7 +1049,7 @@ class PseudoInterpreter {
                     break;
 
                 case "READFILE":
-                    fileName = this.removeQuotationMark(token[1]);
+                    fileName = this.removeQuotationMark(this.evalExpression(token[1]));
                     file = this.files[fileName];
                     fileLines = file[1].split("\n");
                     fileLine = '"' + fileLines[file[0]] + '"';
@@ -1055,7 +1058,7 @@ class PseudoInterpreter {
                     break;
 
                 case "WRITEFILE":
-                    fileName = this.removeQuotationMark(token[1]);
+                    fileName = this.removeQuotationMark(this.evalExpression(token[1]));
                     file = this.files[fileName];
                     fileLines = file[1].split("\n");
                     fileLine = fileLines[file[0]];
@@ -1064,7 +1067,7 @@ class PseudoInterpreter {
                     break;
 
                 case "CLOSEFILE":
-                    fileName = this.removeQuotationMark(token[1]);
+                    fileName = this.removeQuotationMark(this.evalExpression(token[1]));
                     this.files[fileName][0] = 0;
                     break;   
 
