@@ -1,7 +1,7 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-    background-color: #ffffff; /* Dark background */
-    color: #ffffff; /* Light text */
+    background-color: #ffffff;
+    color: #ffffff;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -18,22 +18,22 @@ body {
     height:670px;
 
     max-width: 1200px;
-    border: 1.5px solid #c6d0d8; /* Darker border */
+    border: 1.5px solid #c6d0d8;
     border-radius: 0px;
     overflow: hidden;
 }
 
 h1 {
     text-align: center;
-    color: #2e2a2a; /* Greenish title */
+    color: #2e2a2a;
 }
 
 .textboxes {
-    display: flex; /* Align text boxes side by side */
+    display: flex;
 }
 
 .textbox {
-    width: 50%; /* Each textbox takes half the width */
+    width: 50%;
     padding: 9px;
     position:relative;
 
@@ -47,9 +47,9 @@ h1 {
 }
 
 .input-box {
-    background-color: #f3f6f9; /* Darker input area */
-    color: #2e3135; /* White text for input box */
-    border: 1px solid #c6d0d8; /* Darker border */
+    background-color: #f3f6f9;
+    color: #2e3135;
+    border: 1px solid #c6d0d8;
     border-radius: 8px;
     position:relative;
     height:690px;
@@ -58,9 +58,9 @@ h1 {
 }
 
 .output-box {
-    background-color: #f3f6f9; /* Even darker output area */
-    color: #f3f6f9; /* White text for output box */
-    border: 1px solid #c6d0d8; /* Darker border */
+    background-color: #f3f6f9;
+    color: #2e3135;
+    border: 1px solid #c6d0d8;
     border-radius: 8px;
     position:relative;
     left:3px;
@@ -126,8 +126,8 @@ h1 {
     padding: 10px 20px;
     margin-top: 10px;
     cursor: pointer;
-    background-color: #f3f6f9; /* Purple button */
-    color: #1c1f23; /* White text */
+    background-color: #f3f6f9;
+    color: #1c1f23;
     weight:bold;
     outline: 1px;
     position: relative;
@@ -145,5 +145,5 @@ h1 {
     height:100vh;
 }
 .execute:hover {
-    background-color: #e2e6e6; /* grey hover effect */
+    background-color: #e2e6e6;
 }
