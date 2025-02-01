@@ -10,11 +10,35 @@ class PseudoInterpreter {
         this.elseIfTracker = [0];
         this.inMultilineComment = false; // Track if we are inside a multiline comment
         this.globalReturnValue = null;
-        this.tempArgs = [];
     }
 
     tokenize(line) {
-        if (line.startsWith("IF")) {
+        if (/^([\w\[\]<>\-,\+\*/%]+)\s*<- (.+)$/.test(line)) {
+            const match = line.match(/^([\w\[\]<>\-,\+\*/%]+)\s*<- (.+)$/);
+            return ["SET", match[1], match[2]];
+        } else if (/^([\w\[\]<>\-,\+\*/%]+)\s*= (.+)$/.test(line)) {
+            const match = line.match(/^([\w\[\]<>\-,\+\*/%]+)\s*= (.+)$/);
+            return ["SET", match[1], match[2]];
+        } else if (/^SET\s+([\w\[\]<>\-,\+\*/%]+)\s+TO\s+(.+)$/.test(line)) {
+            const match = line.match(/^SET\s+([\w\[\]<>\-,\+\*/%]+)\s+TO\s+(.+)$/);
+            return ["SET", match[1], match[2]];
+        } else if (line.startsWith("OUTPUT")) {
+            const match = line.match(/^OUTPUT\s+((?:.+?)(?:,\s+(?:.+?))*)$/);
+            const args = match[1].split(/,\s+/).map(arg => arg.trim());
+            return ["OUTPUT", args];
+        } else if (line.startsWith("INPUT")) {
+            const match = line.match(/^INPUT ([A-Za-z0-9\[\]<>,]+)$/);
+            return ["INPUT", match[1]];
+        } else if (line.startsWith("APPEND")) {
+            const match = line.match(/^APPEND (\w+), (.+)$/);
+            return ["APPEND", match[1], match[2]];
+        } else if (line.startsWith("REMOVE")) {
+            const match = line.match(/^REMOVE (\w+), (\d+)$/);
+            return ["REMOVE", match[1], parseInt(match[2], 10)];
+        } else if (line.startsWith("LEN")) {
+            const match = line.match(/^LEN\((\w+)\)$/);
+            return ["LEN", match[1]];
+        } else if (line.startsWith("IF")) {
             const match = line.match(/^IF (.+) THEN$/);
             this.ifCountTracker++;
             this.elseIfTracker.push(0);
@@ -32,31 +56,15 @@ class PseudoInterpreter {
             return ["WHILE", match[1]];
         } else if (line === "ENDWHILE") {
             return ["ENDWHILE"];
-        } else if (/^FOR (\w+)\s*<-?\s*(.+?)\s*TO\s*(.+)$/.test(line)) {
-            const match = line.match(/^FOR (\w+)\s*<-?\s*(.+?)\s*TO\s*(.+)$/);
+        } else if (/^FOR (\w+)\s*<-?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/.test(line)) {
+            const match = line.match(/^FOR (\w+)\s*<-?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/);
             return ["FOR", match[1], match[2], match[3]];
-        } else if (/^FOR (\w+)\s*=?\s*(.+?)\s*TO\s*(.+)$/.test(line)) {
-            const match = line.match(/^FOR (\w+)\s*=?\s*(.+?)\s*TO\s*(.+)$/);
+        } else if (/^FOR (\w+)\s*=?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/.test(line)) {
+            const match = line.match(/^FOR (\w+)\s*=?\s*([\w\[\],\+\-\*\/%]+)\s*TO\s*([\w\[\],\+\-\*\/%]+)$/);
             return ["FOR", match[1], match[2], match[3]];
         } else if (line.startsWith("NEXT")) {
             const match = line.match(/^NEXT (\w+)$/);
             return ["NEXT", match[1]];
-        } else if (/^(.+?)\s*<- (.+)$/.test(line)) {
-            const match = line.match(/^(.+?)\s*<- (.+)$/);
-            return ["SET", match[1], match[2]];
-        } else if (/^(.+?)\s*= (.+)$/.test(line)) {
-            const match = line.match(/^(.+?)\s*= (.+)$/);
-            return ["SET", match[1], match[2]];
-        } else if (/^SET\s+(.+?)\s+TO\s+(.+)$/.test(line)) {
-            const match = line.match(/^SET\s+(.+?)\s+TO\s+(.+)$/);
-            return ["SET", match[1], match[2]];
-        } else if (line.startsWith("OUTPUT")) {
-            const match = line.match(/^OUTPUT\s+((?:.+?)(?:,\s+(?:.+?))*)$/);
-            const args = match[1].split(/,\s+/).map(arg => arg.trim());
-            return ["OUTPUT", args];
-        } else if (line.startsWith("INPUT")) {
-            const match = line.match(/^INPUT ([A-Za-z0-9\[\]<>,]+)$/);
-            return ["INPUT", match[1]];
         } else if (line.startsWith("CASE OF")) {
             const match = line.match(/^CASE OF\s+(.*)$/);
             return ["CASE", match[1]];
@@ -111,6 +119,7 @@ class PseudoInterpreter {
                     if (varName.includes(':')) {
                         [varName, typePart] = varName.split(':').map(s => s.trim());
                     }
+    
                     args.push([varName, typePart, lastMode]); // Append (varname, type, mode)
                 });
                 return args;
@@ -151,62 +160,34 @@ class PseudoInterpreter {
 
     replaceVariables(expr) {
         expr = String(expr);
-        // First pass: replace using topArgs
-        expr = expr.replace(/\b\w+\b/g, (match) => {
-            const topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
-            return topArgs && topArgs[match] !== undefined ? topArgs[match] : match;
-        });
-    
-        // Second pass: replace using this.variables on the interim result
+        // console.log("Replace Variables");
         expr = expr.replace(/\b\w+\b/g, (match) => {
             return this.variables[match] !== undefined ? this.variables[match] : match;
+        });
+        return expr;
+    }
+
+    replaceArrayVariables(expr) {
+        // Regular expression to match variables in square brackets
+        const regex = /\b(\w+)\[(\w+)(?:,(\w+))?\]/g;
+        expr = String(expr);
+        // console.log("replaceArrayVariables");
+        expr = expr.replace(regex, (match, varName, index1, index2) => {
+            // Replace the variable name with its value if it exists in this.variables
+            const replacedVar = this.variables[varName] !== undefined ? this.variables[varName] : varName;
+    
+            // Replace indices if they are defined in this.variables
+            const replacedIndex1 = this.variables[index1] !== undefined ? this.variables[index1] : index1;
+            const replacedIndex2 = index2 && this.variables[index2] !== undefined ? this.variables[index2] : index2;
+    
+            // Construct the new expression based on whether it's a 1D or 2D array
+            return replacedIndex2 
+                ? `${replacedVar}[${replacedIndex1},${replacedIndex2}]` 
+                : `${replacedVar}[${replacedIndex1}]`;
         });
     
         return expr;
     }
-    
-    replaceArrayVariables(expr) {
-        const regex = /\b(\w+)\[(\w+)(?:,(\w+))?\]/g;
-        expr = String(expr);
-    
-        // First pass: replace using topArgs
-        expr = expr.replace(regex, (fullMatch, varName, index1, index2) => {
-            const topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
-    
-            // Resolve varName from topArgs
-            let replacedVar = (topArgs && topArgs[varName] !== undefined) ? topArgs[varName] : varName;
-    
-            // Resolve index1 from topArgs
-            let replacedIndex1 = (topArgs && topArgs[index1] !== undefined) ? topArgs[index1] : index1;
-    
-            // Resolve index2 from topArgs if it exists
-            let replacedIndex2;
-            if (index2) {
-                replacedIndex2 = (topArgs && topArgs[index2] !== undefined) ? topArgs[index2] : index2;
-            }
-    
-            return replacedIndex2 
-                ? `${replacedVar}[${replacedIndex1},${replacedIndex2}]`
-                : `${replacedVar}[${replacedIndex1}]`;
-        });
-    
-        // Second pass: replace using this.variables on the interim result
-        expr = expr.replace(regex, (fullMatch, varName, index1, index2) => {
-            let replacedVar = this.variables[varName] !== undefined ? this.variables[varName] : varName;
-            let replacedIndex1 = this.variables[index1] !== undefined ? this.variables[index1] : index1;
-            
-            let replacedIndex2;
-            if (index2) {
-                replacedIndex2 = this.variables[index2] !== undefined ? this.variables[index2] : index2;
-            }
-    
-            return replacedIndex2 
-                ? `${replacedVar}[${replacedIndex1},${replacedIndex2}]`
-                : `${replacedVar}[${replacedIndex1}]`;
-        });
-    
-        return expr;
-    }    
     
     parseReference(expr) {
         const pattern1 = /^(.*)\[(.+?)\]$/;
@@ -214,17 +195,16 @@ class PseudoInterpreter {
         let match;
         if (pattern2.test(expr)) { // 2D array
             match = expr.match(pattern2);
+            // console.log([match[1],this.evalExpression(match[2]),this.evalExpression(match[3])]);
             return [match[1],this.evalExpression(match[2]),this.evalExpression(match[3])]
         } else if (pattern1.test(expr)) { // 1D array
             match = expr.match(pattern1);
+            // console.log([match[1],this.evalExpression(match[2])]);
             return [match[1],this.evalExpression(match[2])]
         } else {
+            // console.log(match);
             return [expr];
         }
-    }
-
-    isReference(expr) {
-        return this.parseReference(expr).length > 1 || this.replaceVariables(expr) !== expr;
     }
 
     evalArray(expr) {
@@ -244,7 +224,10 @@ class PseudoInterpreter {
 
     removeQuotationMark(expr) {
         let expr_string = String(expr);
+        // console.log("removeQuotationMark");
+        // console.log(expr_string);
         if ((expr_string.startsWith('"') && expr_string.endsWith('"')) || (expr_string.startsWith("'") && expr_string.endsWith("'"))) {
+            // console.log(expr_string.slice(1, -1));
             return expr_string.slice(1, -1);
         } else {
             return expr;
@@ -284,6 +267,47 @@ class PseudoInterpreter {
         const startIndex = x - 1;
         return str.substring(startIndex, startIndex + y);
     }
+    
+    /*
+    handleForLoop(parsedCode, i, varName, startVar, endVar) {
+        // Handle a FOR loop and any nested loops.
+        let forIndex = i;
+        let loopI = 1;
+    
+        // Loop over the range from start to end
+        for (let loopVal = start; loopVal <= end; loopVal++) {
+            this.variables[varName] = loopVal;
+            loopI = forIndex + 1;
+            let executableCode = [];
+    
+            // Execute the body of the loop
+            while (loopI < parsedCode.length) {
+                let currentToken = parsedCode[loopI];
+                if (currentToken[0] === 'FOR') {
+                    // Recursively handle nested loops
+                    this.execute(executableCode);
+                    executableCode = [];
+                    loopI = this.handleForLoop(parsedCode, loopI, currentToken[1], currentToken[2], currentToken[3]);
+                } else if (currentToken[0] === 'NEXT') {
+                    this.execute(executableCode);
+                    executableCode = [];
+                    if (currentToken[1] === varName) {
+                        break;  // End of the current loop
+                    }
+                } else {
+                    executableCode.push(currentToken);
+                    // this.execute([currentToken]);  // Execute other commands
+                }
+                loopI++;
+            }
+    
+            this.execute(executableCode);
+            executableCode = [];
+        }
+    
+        return loopI;
+    }
+    */
 
     callFunction(funcName, args) {
         if (!this.functions[funcName]) {
@@ -298,13 +322,13 @@ class PseudoInterpreter {
         if (funcParams.length !== args.length) {
             throw new Error(`Expected ${funcParams.length} arguments, got ${args.length}.`);
         }
-        
-        let storedArgs = {};
+    
+        // Backup current variables and set up local scope for the function
+        const savedVariables = { ...this.variables };
         funcParams.forEach(([paramName, paramType], index) => {
             const argValue = this.evalExpression(args[index]);
-            storedArgs[paramName] = argValue; // Assign argument value to parameter name
+            this.variables[paramName] = argValue; // Assign argument value to parameter name
         });
-        this.tempArgs.push(storedArgs);
     
         // Clear any previous return value
         this.globalReturnValue = null;
@@ -312,10 +336,12 @@ class PseudoInterpreter {
         // Execute function body
         this.execute(funcBody);
 
+        // Restore previous variable state
+        this.variables = savedVariables;
+
         // Save return value
         let returnValue = this.globalReturnValue;
         this.globalReturnValue = null;;
-        this.tempArgs.pop();
     
         // Return the value set by RETURN statement
         return returnValue;
@@ -327,78 +353,67 @@ class PseudoInterpreter {
         }
         
         const procDef = this.procedures[procName];
+        console.log(procDef);
         const procParams = procDef["defParams"];
         const procBody = procDef["procBody"];
-
+        console.log(procParams);
+        console.log(procBody);
+    
         // Ensure the correct number of arguments
         if (procParams.length !== args.length) {
             throw new Error(`Expected ${procParams.length} arguments, got ${args.length}.`);
         }
 
-        let storedArgs = {};
         procParams.forEach(([paramName, paramType, paramValOrRef], index) => {
-            if (this.isReference(args[index])) {
-                storedArgs[paramName] = args[index];
-            } else {
-                storedArgs[paramName] = this.evalExpression(args[index]);
-            }
+            this.variables[paramName] = args[index]; // Assign argument value to parameter name
         });
-        this.tempArgs.push(storedArgs);
 
         // Execute procedure body
-        this.execute(procBody);
-        
+        for (const statement of procBody) {
+            this.execute([statement]);
+        }
         procParams.forEach(([paramName, paramType, paramValOrRef], index) => {
-            if (paramValOrRef === "BYREF" && this.isReference(args[index])) {
-                this.execute([["SET",args[index],this.tempArgs[this.tempArgs.length - 1][paramName]]]); // Return any altered argument values
+            console.log(paramValOrRef);
+            if (paramValOrRef === "BYREF") {
+                this.execute([["SET",args[index],this.variables[paramName]]]); // Return any altered argument values
             }
         });
-
-        this.tempArgs.pop();
+    
         return;
     }
     
     evalExpression(expr) {
         expr = String(expr);
 
-        // Handle strings
-        if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
-            return expr;
-        }
-
         // Replace logical and comparison operators
-        expr = expr.replace(/(?<!&)&(?!&)/g, '+');                          // String Concatenation
-        expr = expr.replace(/<>/g, '!=');                                   // Not equal to
-        expr = expr.replace(/\bAND\b/g, '&&');                              // And
-        expr = expr.replace(/OR/g, '||');                                   // Or
-        expr = expr.replace(/NOT/g, '!');                                   // Not
-        expr = expr.replace(/TRUE/g, 'true');                               // True
-        expr = expr.replace(/FALSE/g, 'false');                             // False
-        expr = expr.replace(/\^/g, '**');                                   // Exponentiation
-        expr = expr.replace(/MOD/g, '%');                                   // Remainder
-        expr = expr.replace(/(\w+)\s+DIV\s+(\w+)/g, 'Math.floor($1 / $2)'); // Floor division
-        expr = this.replaceSingleEquals(expr);                              // Equal to
+        expr = expr.replace(/(?<!&)&(?!&)/g, '+');  // Concatenation
+        expr = expr.replace(/<>/g, '!=');           // Not equal to
+        expr = expr.replace(/\bAND\b/g, '&&');      // And
+        expr = expr.replace(/OR/g, '||');           // Or
+        expr = expr.replace(/NOT/g, '!');           // Not
+        expr = expr.replace(/TRUE/g, 'true');       // True
+        expr = expr.replace(/FALSE/g, 'false');     // False
+        expr = this.replaceSingleEquals(expr);      // Equal to
 
         // Handle LENGTH, LEFT, RIGHT, MID functions
         while (expr.includes("LENGTH(")) {
             expr = expr.replace(/LENGTH\(([^)]+)\)/g, (match, strExpr) => {
-                const evaluatedString = this.removeQuotationMark(this.evalExpression(strExpr.trim()));
+                const evaluatedString = this.evalExpression(strExpr.trim());
                 return evaluatedString.length;
             });
         }
 
         while (expr.includes("LEFT(")) {
             expr = expr.replace(/LEFT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
-                const str = this.removeQuotationMark(String(this.evalExpression(strExpr.trim())));
+                const str = String(this.evalExpression(strExpr.trim()));
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
                 return '"' + String(this.evalLeft(str,len)) + '"';
             });
-            console.log(expr);
         }
 
         while (expr.includes("RIGHT(")) {
             expr = expr.replace(/RIGHT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
-                const str = this.removeQuotationMark(String(this.evalExpression(strExpr.trim())));
+                const str = String(this.evalExpression(strExpr.trim()));
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
                 return '"' + String(this.evalRight(str,len)) + '"';
             });
@@ -406,7 +421,7 @@ class PseudoInterpreter {
 
         while (expr.includes("MID(")) {
             expr = expr.replace(/MID\(([^,]+),\s*([^\s,]+),\s*([^\)]+)\)/g, (match, strExpr, startExpr, lenExpr) => {
-                const str = this.removeQuotationMark(String(this.evalExpression(strExpr.trim())));
+                const str = String(this.evalExpression(strExpr.trim()));
                 const start = parseInt(this.evalExpression(startExpr.trim()));
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
                 return '"' + String(this.evalMid(str,start,len)) + '"';
@@ -416,12 +431,12 @@ class PseudoInterpreter {
         // Handle UCASE and LCASE functions
         while (expr.includes("UCASE(") || expr.includes("LCASE(")) {
             expr = expr.replace(/UCASE\(([^)]+)\)/g, (match, strExpr) => {
-                const evaluatedString = this.removeQuotationMark(this.evalExpression(strExpr.trim()));
+                const evaluatedString = this.evalExpression(strExpr.trim());
                 return '"' + evaluatedString.toUpperCase() + '"'; // Convert to uppercase
             });
             
             expr = expr.replace(/LCASE\(([^)]+)\)/g, (match, strExpr) => {
-                const evaluatedString = this.removeQuotationMark(this.evalExpression(strExpr.trim()));
+                const evaluatedString = this.evalExpression(strExpr.trim());
                 return '"' + evaluatedString.toLowerCase()+ '"'; // Convert to lowercase
             });
         }
@@ -443,9 +458,8 @@ class PseudoInterpreter {
         }
 
         // Replace variables in the expression with their values
-        do {
-            expr = this.replaceVariables(expr);
-        } while (expr !== this.replaceVariables(expr))
+        expr = this.replaceVariables(expr);
+        expr = this.replaceVariables(expr);
 
         // Regular expression to match 1D and 2D array references
         const arrayPattern = /([A-Za-z]+)\[(.+?)(?:,(\S+))?\]/g;
@@ -587,6 +601,7 @@ class PseudoInterpreter {
                     if (caseLine.length === 4 && caseLine[0] === "RANGE_CASE") { 
                         parsedLines.push(["IF", `${caseExpression} <= ${caseLine[2]} && ${caseExpression} >= ${caseLine[1]}`]); 
                         caseAction = caseLine[3].toString().trim();
+                        // console.log(caseAction);
                         caseAction = this.tokenize(caseAction);
                         parsedLines.push(caseAction); 
                         parsedLines.push(["ELSE"]); 
@@ -597,6 +612,7 @@ class PseudoInterpreter {
                         parsedLines.push(["IF", `${caseExpression} == ${caseLine[1]}`]);
                         caseAction = caseLine[2].toString().trim();
                         caseAction = this.tokenize(caseAction);
+                        // console.log(caseAction);
                         parsedLines.push(caseAction); 
                         parsedLines.push(["ELSE"]); 
                     }
@@ -606,6 +622,7 @@ class PseudoInterpreter {
                 if (otherwiseLine) {
                     caseAction = otherwiseLine[1].toString().trim();
                     caseAction = this.tokenize(caseAction);
+                    // console.log(caseAction);
                     parsedLines.push(caseAction); 
                 }
                 
@@ -620,13 +637,13 @@ class PseudoInterpreter {
                 const iteratorName = parsedLine[1];
                 let initialLine = ["SET", iteratorName, parsedLine[2]]; // Initialize iterator
                 parsedLines.push(initialLine);
-                let whileLine = ["WHILE", iteratorName + " <= " + parsedLine[3]]; // While line
+                let whileLine = ["WHILE", iteratorName + "<=" + parsedLine[3]]; // While line
                 parsedLines.push(whileLine);
             }
 
             if (parsedLine[0] === "NEXT") {
                 const iteratorName = parsedLine[1];
-                let nextLine = ["SET", iteratorName, iteratorName + " + 1"]; // Next line
+                let nextLine = ["SET", iteratorName, iteratorName + "+1"]; // Next line
                 parsedLines.push(nextLine);
                 parsedLines.push(["ENDWHILE"]);
             }
@@ -651,7 +668,6 @@ class PseudoInterpreter {
         let currentBlock;
         let procName;
         let defParams;
-        let topArgs;
     
         while (i < parsedCode.length) {
             const token = parsedCode[i];
@@ -662,26 +678,22 @@ class PseudoInterpreter {
                     break;
 
                 case "SET":
+                    console.log(token[1]);
+                    console.log(token[2]);
                     ref = this.parseReference(token[1]);
-                    let result = this.evalExpression(token[2]);
-                
-                    topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
-                
                     if (ref.length === 1) {
-                        if (topArgs && ref[0] in topArgs) {
-                            topArgs[ref[0]] = result;
-                        } else {
-                            this.variables[ref[0]] = result;
-                        }
+                        this.variables[ref[0]] = this.evalExpression(token[2]);
                     } else if (ref.length === 2) {
-                        this.arrays[ref[0]][ref[1]] = result;
+                        this.arrays[ref[0]][ref[1]] = this.evalExpression(token[2]);
                     } else if (ref.length === 3) {
-                        this.arrays[ref[0]][ref[1]][ref[2]] = result;
+                        this.arrays[ref[0]][ref[1]][ref[2]] = this.evalExpression(token[2]);
                     }
                     break;
-                    
+        
                 case "OUTPUT":
                     const outputArgs = token[1]; // This is now an array of arguments
+                    // console.log(token[1][0]);
+                    // console.log(this.evalExpression(token[1][0]));
                     const outputValue = outputArgs.map(arg => this.turnBooleanCapitalized(this.removeQuotationMark(this.evalExpression(arg)))).join(''); // Concatenate evaluated values
                     document.getElementById('outputBox').value += outputValue + '\n'; // Output to text box
                     console.log(outputValue); // Output to console
@@ -690,23 +702,34 @@ class PseudoInterpreter {
                 case "INPUT":
                     const inputVal = prompt(`Enter value for ${this.replaceArrayVariables(token[1])}:`);
                     ref = this.parseReference(token[1]);
-                
-                    topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
-                    const val = isNaN(inputVal) ? inputVal : Number(inputVal);
-                
                     if (ref.length === 1) {
-                        if (topArgs && ref[0] in topArgs) {
-                            topArgs[ref[0]] = val;
-                        } else {
-                            this.variables[ref[0]] = val;
-                        }
+                        this.variables[ref[0]] = isNaN(inputVal) ? inputVal : Number(inputVal);
                     } else if (ref.length === 2) {
-                        this.arrays[ref[0]][ref[1]] = val;
+                        this.arrays[ref[0]][ref[1]] = isNaN(inputVal) ? inputVal : Number(inputVal);
                     } else if (ref.length === 3) {
-                        this.arrays[ref[0]][ref[1]][ref[2]] = val;
+                        this.arrays[ref[0]][ref[1]][ref[2]] = isNaN(inputVal) ? inputVal : Number(inputVal);
                     }
                     break;
-                    
+                
+                /*
+                case "APPEND":
+                    if (!Array.isArray(this.variables[token[1]])) {
+                    throw new Error(`${token[1]} is not an array.`);
+                    }
+                    this.variables[token[1]].push(this.evalExpression(token[2]));
+                    break;
+        
+                case "REMOVE":
+                    if (!Array.isArray(this.variables[token[1]])) {
+                    throw new Error(`${token[1]} is not an array.`);
+                    }
+                    this.variables[token[1]].splice(token[2], 1);
+                    break;
+
+                case "LEN":
+                    console.log(this.evalExpression(`LEN(${token[1]})`));
+                    break;
+                */
 
                 case "IF":
                     const condition = this.evalExpression(token[1]);
@@ -748,6 +771,25 @@ class PseudoInterpreter {
                                 ifCount--;
                                 if (ifCount === 0) break;
                             }
+                            /*
+                            if (ifCount === 1 && parsedCode[i][0] === 'ELSE IF') { // Execute ELSE IF block if present
+                                i++;
+                                const condition = this.evalExpression(parsedCode[i][1]);
+                                executableCode = [];
+                                while (ifCount > 0 && parsedCode[i][0] !== 'ELSE IF' && parsedCode[i][0] !== 'ELSE') {
+                                    if (parsedCode[i][0] === 'IF') {
+                                        ifCount++;
+                                    }
+                                    if (parsedCode[i][0] === 'ENDIF') {
+                                        ifCount--;
+                                    }
+                                    executableCode.push(parsedCode[i]);
+                                    i++;
+                                }
+                                this.execute(executableCode);
+                                break;
+                            }
+                            */
                             if (ifCount === 1 && parsedCode[i][0] === 'ELSE') { // Execute ELSE block if present
                                 i++;
                                 executableCode = [];
@@ -774,6 +816,24 @@ class PseudoInterpreter {
 
                 case "ENDIF":
                     break;
+                
+                /*
+                case "DEFINE":
+                    const funcName = token[1];
+                    const params = token[2];
+                    const funcBody = [];
+                    i++;
+                    while (parsedCode[i][0] !== "ENDDEFINE") {
+                        funcBody.push(parsedCode[i]);
+                        i++;
+                    }
+                    this.functions[funcName] = { params, funcBody };
+                    break;
+
+                case "CALL":
+                    this.callFunction(token[1], token[2].map((arg) => this.evalExpression(arg)));
+                    break;
+                */
 
                 case "WHILE":
                     let loopCondition = token[1];
@@ -924,13 +984,30 @@ class PseudoInterpreter {
                 
                 case "UNTIL":
                     break;
+
+                /*   
+                case "FOR":
+                    var varName = token[1];
+                    var start = token[2];
+                    var end = token[3];
+                    console.log(varName);
+                    console.log(start);
+                    console.log(end);
+                    start = this.evalExpression(start);
+                    end = this.evalExpression(end);
+                    console.log(start);
+                    console.log(end);
+                    i = this.handleForLoop(parsedCode, i, varName, start, end);
+                */
                 
                 case "CONTINUE":
                     this.continueFlag = true;
+                    // console.log("CONTINUE");
                     break; 
                     
                 case "BREAK":
                     this.breakFlag = true;
+                    // console.log("BREAK");
                     break;  
 
                 case "NEXT":
@@ -975,6 +1052,8 @@ class PseudoInterpreter {
                     return; // Exit immediately from function execution
                 
                 case "PROCEDURE_DEF":
+                    console.log(token);
+                    console.log(token[2]);
                     procName = token[1];
                     defParams = token[2];
                 
