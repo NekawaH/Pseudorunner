@@ -8,6 +8,15 @@ body {
     height: 100vh;
 }
 
+.main-container{
+    display: flex;
+    flex-direction: column;
+    width: 80%;
+    position:relative;
+    left:-50px;
+    height:100vh;
+}
+
 .container {
     display: flex;
     flex-direction: column;
@@ -51,25 +60,25 @@ h1 {
     color: #2e3135;
     border: 1px solid #c6d0d8;
     border-radius: 8px;
-    position:relative;
-    height:690px;
-    left:-4px;
-    font-weight:bold;
-}
-
+    position: relative;
+    height: 690px;
+    left: -4px;
+    font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
+  }
+  
 .output-box {
     background-color: #f3f6f9;
     color: #2e3135;
     border: 1px solid #c6d0d8;
     border-radius: 8px;
-    position:relative;
-    left:3px;
+    position: relative;
+    left: 3px;
     width: 50%;
-    font-weight:bold;
+    font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
 }
+  
 .list {
-
-    background-color: #2b7fd3;
+    background-color: #0a69da;
     position:absolute;
     left:0;
     width:60px;
@@ -89,8 +98,8 @@ h1 {
     display: block;
     width: 100%;
     padding: 10px;
-    background-color: #333;
-    color: #fff;
+    background-color: #333333;
+    color: #ffffff;
     border: none;
     cursor: pointer;
 }
@@ -100,50 +109,46 @@ h1 {
     padding: 0;
     margin: 0;
 }
+
 .payload{
     width:100px;
     background-color: #ececec;
     border-radius: 5px;
 }
 
-
 .menu-items li {
     padding: 10px;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid #cccccc;
 }
 
 .menu-items li a {
     text-decoration: none;
-    color: #333;
+    color: #333333;
 }
 
 .menu-items li a:hover {
-    color: #f00;
+    color: #0a69da;
 }
+
 .execute {
     padding: 10px;
     display: block;
     padding: 10px 20px;
     margin-top: 10px;
     cursor: pointer;
-    background-color: #f3f6f9;
-    color: #1c1f23;
-    weight:bold;
+    background-color: #1e883e;
+    color: #ffffff;
+    font-weight: bold;
     outline: 1px;
     position: relative;
-    top:1px;
-    right:0px;
+    top: 1px;
+    right: 0px;
     border-radius: 5px;
     width: 100.3%;
+    border: 2px solid #1e7336;
+    font-family: "Mona Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
-.main-container{
-    display: flex;
-    flex-direction: column;
-    width: 80%;
-    position:relative;
-    left:-50px;
-    height:100vh;
-}
+
 .execute:hover {
-    background-color: #e2e6e6;
+    background-color: #1b8139;
 }
