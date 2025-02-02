@@ -1038,10 +1038,14 @@ class PseudoInterpreter {
                 case "OPENFILE":
                     fileName = this.removeQuotationMark(this.evalExpression(token[1]));
                     file = this.files[fileName];
+                    if (!file) {
+                        this.files[fileName] = [0, ""];
+                        file = this.files[fileName];
+                    }
                     if (token[2] === "READ") {
                         this.files[fileName] = [0, file[1]];
                     } else if (token[2] === "WRITE") {
-                        this.files[fileName] = [0,""];
+                        this.files[fileName] = [0, ""];
                     } else if (token[2] === "APPEND") {
                         let fileLines = file[1].split("\n");
                         this.files[fileName] = [fileLines.length - 1, file[1]];
