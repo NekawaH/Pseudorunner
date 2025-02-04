@@ -260,13 +260,26 @@ class PseudoInterpreter {
         }
     }
 
-    removeQuotationMark(expr) {
+    removeQuotes(expr) {
         let exprString = String(expr);
         if ((exprString.startsWith('"') && exprString.endsWith('"')) || (exprString.startsWith("'") && exprString.endsWith("'"))) {
             return exprString.slice(1, -1);
         } else {
             return expr;
         }
+    }
+
+    concatenateQuotedStrings(expr) {
+        // Match all quoted substrings and ignore spaces or empty strings
+        const matches = expr.match(/(["'])(.*?)\1/g);;
+        
+        if (matches) {
+            // Remove the quotes and join the strings
+            const concatenated = matches.map(match => match.slice(1, -1)).join('');
+            return `"${concatenated}"`; // Keep an extra pair of quotes
+        }
+        
+        return expr; // Return empty quotes if no matches found
     }
 
     turnBooleanCapitalized(expr) {
@@ -380,6 +393,7 @@ class PseudoInterpreter {
         expr = String(expr);
 
         // Handle strings
+        expr = this.concatenateQuotedStrings(expr);
         if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
             return expr;
         }
@@ -405,14 +419,14 @@ class PseudoInterpreter {
         // Handle LENGTH, LEFT, RIGHT, MID functions
         while (expr.includes("LENGTH(")) {
             expr = expr.replace(/LENGTH\(([^)]+)\)/g, (match, strExpr) => {
-                const evaluatedString = this.removeQuotationMark(this.evalExpression(strExpr.trim()));
+                const evaluatedString = this.removeQuotes(this.evalExpression(strExpr.trim()));
                 return evaluatedString.length;
             });
         }
 
         while (expr.includes("LEFT(")) {
             expr = expr.replace(/LEFT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
-                const str = this.removeQuotationMark(String(this.evalExpression(strExpr.trim())));
+                const str = this.removeQuotes(String(this.evalExpression(strExpr.trim())));
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
                 return '"' + String(this.evalLeft(str,len)) + '"';
             });
@@ -420,7 +434,7 @@ class PseudoInterpreter {
 
         while (expr.includes("RIGHT(")) {
             expr = expr.replace(/RIGHT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
-                const str = this.removeQuotationMark(String(this.evalExpression(strExpr.trim())));
+                const str = this.removeQuotes(String(this.evalExpression(strExpr.trim())));
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
                 return '"' + String(this.evalRight(str,len)) + '"';
             });
@@ -428,7 +442,7 @@ class PseudoInterpreter {
 
         while (expr.includes("MID(")) {
             expr = expr.replace(/MID\(([^,]+),\s*([^\s,]+),\s*([^\)]+)\)/g, (match, strExpr, startExpr, lenExpr) => {
-                const str = this.removeQuotationMark(String(this.evalExpression(strExpr.trim())));
+                const str = this.removeQuotes(String(this.evalExpression(strExpr.trim())));
                 const start = parseInt(this.evalExpression(startExpr.trim()));
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
                 return '"' + String(this.evalMid(str,start,len)) + '"';
@@ -438,12 +452,12 @@ class PseudoInterpreter {
         // Handle UCASE and LCASE functions
         while (expr.includes("UCASE(") || expr.includes("LCASE(")) {
             expr = expr.replace(/UCASE\(([^)]+)\)/g, (match, strExpr) => {
-                const evaluatedString = this.removeQuotationMark(this.evalExpression(strExpr.trim()));
+                const evaluatedString = this.removeQuotes(this.evalExpression(strExpr.trim()));
                 return '"' + evaluatedString.toUpperCase() + '"'; // Convert to uppercase
             });
             
             expr = expr.replace(/LCASE\(([^)]+)\)/g, (match, strExpr) => {
-                const evaluatedString = this.removeQuotationMark(this.evalExpression(strExpr.trim()));
+                const evaluatedString = this.removeQuotes(this.evalExpression(strExpr.trim()));
                 return '"' + evaluatedString.toLowerCase()+ '"'; // Convert to lowercase
             });
         }
@@ -467,7 +481,7 @@ class PseudoInterpreter {
         // Handle EOF function (File Management)
         while (expr.includes("EOF(")) {
             expr = expr.replace(/EOF\(([^)]+)\)/g, (match, fileName) => {
-                fileName = this.removeQuotationMark(this.evalExpression(fileName));
+                fileName = this.removeQuotes(this.evalExpression(fileName));
                 let file = this.files[fileName];
                 let fileLines = file[1].split("\n");
                 return file[0] >= fileLines.length ? 1 : 0;
@@ -522,6 +536,7 @@ class PseudoInterpreter {
         }
 
         // Handle strings
+        expr = this.concatenateQuotedStrings(expr);
         if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
             return expr;
         }
@@ -723,7 +738,7 @@ class PseudoInterpreter {
                     
                 case "OUTPUT":
                     const outputArgs = token[1]; // This is now an array of arguments
-                    const outputValue = outputArgs.map(arg => this.turnBooleanCapitalized(this.removeQuotationMark(this.evalExpression(arg)))).join(''); // Concatenate evaluated values
+                    const outputValue = outputArgs.map(arg => this.turnBooleanCapitalized(this.removeQuotes(this.evalExpression(arg)))).join(''); // Concatenate evaluated values
                     document.getElementById('outputBox').value += outputValue + '\n'; // Output to text box
                     console.log(outputValue); // Output to console
                     break;
@@ -1046,7 +1061,7 @@ class PseudoInterpreter {
                     break;
 
                 case "OPENFILE":
-                    fileName = this.removeQuotationMark(this.evalExpression(token[1]));
+                    fileName = this.removeQuotes(this.evalExpression(token[1]));
                     file = this.files[fileName];
                     if (!file) {
                         this.files[fileName] = [0, ""];
@@ -1063,7 +1078,7 @@ class PseudoInterpreter {
                     break;
 
                 case "READFILE":
-                    fileName = this.removeQuotationMark(this.evalExpression(token[1]));
+                    fileName = this.removeQuotes(this.evalExpression(token[1]));
                     file = this.files[fileName];
                     fileLines = file[1].split("\n");
                     fileLine = '"' + fileLines[file[0]] + '"';
@@ -1072,18 +1087,19 @@ class PseudoInterpreter {
                     break;
 
                 case "WRITEFILE":
-                    fileName = this.removeQuotationMark(this.evalExpression(token[1]));
+                    fileName = this.removeQuotes(this.evalExpression(token[1]));
                     file = this.files[fileName];
                     fileLines = file[1].split("\n");
                     fileLine = fileLines[file[0]];
-                    let newFileContent = file[1] + this.removeQuotationMark(this.evalExpression(token[2])) + "\n";
+                    let newFileContent = file[1] ? file[1] + "\n" : "";
+                    newFileContent = newFileContent + this.removeQuotes(this.evalExpression(token[2]));
                     this.files[fileName] = [file[0] + 1, newFileContent];
                     break;
 
                 case "CLOSEFILE":
-                    fileName = this.removeQuotationMark(this.evalExpression(token[1]));
+                    fileName = this.removeQuotes(this.evalExpression(token[1]));
                     this.files[fileName][0] = 0;
-                    break;   
+                    break;
 
                 default:
                     throw new SyntaxError(`Unknown command: ${token[0]}`);
