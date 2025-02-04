@@ -384,6 +384,11 @@ class PseudoInterpreter {
             return expr;
         }
 
+        // Handle file names
+        if (expr.endsWith('.txt')) {
+            return expr;
+        }
+
         // Replace logical and comparison operators
         expr = expr.replace(/(?<!&)&(?!&)/g, '+');                          // String Concatenation
         expr = expr.replace(/<>/g, '!=');                                   // Not equal to
@@ -472,7 +477,7 @@ class PseudoInterpreter {
         // Replace variables in the expression with their values
         do {
             expr = this.replaceVariables(expr);
-        } while (expr !== this.replaceVariables(expr))
+        } while (expr !== this.replaceVariables(expr));
 
         // Regular expression to match 1D and 2D array references
         const arrayPattern = /([A-Za-z]+)\[(.+?)(?:,(\S+))?\]/g;
@@ -514,6 +519,11 @@ class PseudoInterpreter {
                 // Reset regex index for further matches in modified expression
                 userFuncRegex.lastIndex = 0;
             }
+        }
+
+        // Handle strings
+        if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
+            return expr;
         }
 
         try {
@@ -664,8 +674,8 @@ class PseudoInterpreter {
 
         }
 
-        for (const pline of parsedLines) {
-            console.log(pline);
+        for (const parsedLine of parsedLines) {
+            console.log(parsedLine);
         }
         return parsedLines;
     }
