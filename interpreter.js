@@ -65,10 +65,10 @@ class PseudoInterpreter {
             return ["OTHERWISE", match ? match[1].trim() : ""];
         } else if (/^(\S+)\s*TO\s*(\S+)\s*:\s*/.test(line)) {
             const match = line.match(/^(.*?)\s*TO\s*(.*?)\s*:\s*(.*)/);
-            return ["RANGE_CASE", match[1].trim(), match[2].trim(), match[3].trim()];
+            return ["RANGECASE", match[1].trim(), match[2].trim(), match[3].trim()];
         } else if (/^\S+\s*:\s*/.test(line)) {
             const match = line.match(/^(.*?)\s*:\s*(.*)/);
-            return ["CASE_VALUE", match[1].trim(), match[2].trim()];
+            return ["CASEVALUE", match[1].trim(), match[2].trim()];
         } else if (line === "ENDCASE") {
             return ["ENDCASE"];
         } else if (line === "REPEAT") {
@@ -78,12 +78,12 @@ class PseudoInterpreter {
             return ["UNTIL", match[1]];
         } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
             const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
-            return ["DECLARE_ARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], match[4]];
+            return ["DECLAREARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], match[4]];
         } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
             const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
-            return ["DECLARE_2D_ARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], [parseInt(match[4], 10), parseInt(match[5], 10)], match[6]];
+            return ["DECLARE2DARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], [parseInt(match[4], 10), parseInt(match[5], 10)], match[6]];
         } else if (line.startsWith("DECLARE")) {
-            return ["DECLARE_VAR"];
+            return ["DECLAREVAR"];
         } else if (line === "CONTINUE") {
             return ["CONTINUE"];
         } else if (line === "BREAK") {
@@ -118,13 +118,13 @@ class PseudoInterpreter {
                 return args;
             };
             const args = parseArguments(rawArgs);
-            return ["PROCEDURE_DEF", procedureName, args];
+            return ["PROCEDUREDEF", procedureName, args];
         } else if (line === "ENDPROCEDURE") {
             return ["ENDPROCEDURE"];
         } else if (/^CALL\s+(\w+)\((.*)\)$/.test(line)) {
             const match = line.match(/^CALL\s+(\w+)\((.*)\)$/);
             const args = match[2] ? match[2].split(",").map(a => a.trim()) : [];
-            return ["CALL_PROCEDURE", match[1], args];
+            return ["CALLPROCEDURE", match[1], args];
         } else if (/^FUNCTION\s+(\w+)\((.*?)\)\s+RETURNS\s+(\w+)$/.test(line)) {
             const match = line.match(/^FUNCTION\s+(\w+)\((.*?)\)\s+RETURNS\s+(\w+)$/);
             const functionName = match[1];
@@ -138,7 +138,7 @@ class PseudoInterpreter {
                 });
             };
             const args = parseArguments(rawArgs);
-            return ["FUNCTION_DEF", functionName, args, returnType];
+            return ["FUNCTIONDEF", functionName, args, returnType];
         } else if (line === "ENDFUNCTION") {
             return ["ENDFUNCTION"];
         } else if (/^RETURN\s+(.*)$/.test(line)) {
@@ -603,13 +603,13 @@ class PseudoInterpreter {
                     let caseParsed = this.tokenize(caseLine);
 
                     // Handle individual cases
-                    if (caseParsed[0] === "CASE_VALUE") {
+                    if (caseParsed[0] === "CASEVALUE") {
                         caseLines.push(caseParsed); // Store individual case actions
                         continue;
                     }
 
                     // Handle range cases
-                    if (caseParsed[0] === "RANGE_CASE") {
+                    if (caseParsed[0] === "RANGECASE") {
                         caseLines.push(caseParsed); // Store range case actions
                         continue;
                     }
@@ -632,7 +632,7 @@ class PseudoInterpreter {
                 for (const caseLine of caseLines) {
                     caseCount++;
 
-                    if (caseLine.length === 4 && caseLine[0] === "RANGE_CASE") { 
+                    if (caseLine.length === 4 && caseLine[0] === "RANGECASE") { 
                         parsedLines.push(["IF", `${caseExpression} <= ${caseLine[2]} && ${caseExpression} >= ${caseLine[1]}`]); 
                         caseAction = caseLine[3].toString().trim();
                         caseAction = this.tokenize(caseAction);
@@ -991,21 +991,21 @@ class PseudoInterpreter {
                 case "NEXT":
                     break;
 
-                case "DECLARE_ARRAY":
+                case "DECLAREARRAY":
                     this.arrays[token[1]] = [];
                     break;
                 
-                case "DECLARE_2D_ARRAY":
+                case "DECLARE2DARRAY":
                     this.arrays[token[1]] = [];
                     for (let i = 0; i < 114514; i++) {
                         this.arrays[token[1]][i] = [];
                     }
                     break;
 
-                case "DECLARE_VAR":
+                case "DECLAREVAR":
                     break;
                 
-                case "FUNCTION_DEF":
+                case "FUNCTIONDEF":
                     const [_, funcName, params, returnType] = token;
                     
                     // Collect all lines until "ENDFUNCTION" as the function body
@@ -1032,7 +1032,7 @@ class PseudoInterpreter {
                     this.globalReturnValue = this.evalExpression(token[1]);
                     return; // Exit immediately from function execution
                 
-                case "PROCEDURE_DEF":
+                case "PROCEDUREDEF":
                     procName = token[1];
                     defParams = token[2];
                 
@@ -1051,7 +1051,7 @@ class PseudoInterpreter {
                 case "ENDPROCEDURE":
                     break;
 
-                case "CALL_PROCEDURE":
+                case "CALLPROCEDURE":
                     procName = token[1];
                     const args = token[2];
                 
