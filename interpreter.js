@@ -8,7 +8,8 @@ class PseudoInterpreter {
         this.functions = {};
         this.files = {};
         this.ifCountTracker = 0;
-        this.elseIfTracker = [0];
+        this.elseIfTracker = [];
+        this.forStepTracker = [];
         this.inMultilineComment = false;
         this.globalReturnValue = null;
         this.tempArgs = [];
@@ -22,7 +23,7 @@ class PseudoInterpreter {
             return ["IF", match[1]];
         } else if (line.startsWith("ELSE IF")) {
             const match = line.match(/^ELSE IF (.+)$/);
-            this.elseIfTracker[this.ifCountTracker]++;
+            this.elseIfTracker[this.ifCountTracker - 1]++;
             return ["ELSE IF", match[1]];
         } else if (line === "ELSE") {
             return ["ELSE"];
@@ -36,20 +37,15 @@ class PseudoInterpreter {
             return ["WHILE", match[1]];
         } else if (line === "ENDWHILE") {
             return ["ENDWHILE"];
-        } else if (/^FOR (\w+)\s*<-?\s*(.+?)\s*TO\s*(.+)$/.test(line)) {
-            const match = line.match(/^FOR (\w+)\s*<-?\s*(.+?)\s*TO\s*(.+)$/);
-            return ["FOR", match[1], match[2], match[3]];
-        } else if (/^FOR (\w+)\s*=?\s*(.+?)\s*TO\s*(.+)$/.test(line)) {
-            const match = line.match(/^FOR (\w+)\s*=?\s*(.+?)\s*TO\s*(.+)$/);
-            return ["FOR", match[1], match[2], match[3]];
+        } else if (/^FOR (\w+)\s*(<-|=)\s*(.+?)\s*TO\s*(.+?)(\s*STEP\s*(.+?))?$/.test(line)) {
+            const match = line.match(/^FOR (\w+)\s*(<-|=)\s*(.+?)\s*TO\s*(.+?)(\s*STEP\s*(.+?))?$/);
+            const stepValue = match[6] ? match[6] : '1'; // Default to '1' if STEP is not present
+            return ["FOR", match[1], match[3], match[4], stepValue];
         } else if (line.startsWith("NEXT")) {
             const match = line.match(/^NEXT (\w+)$/);
             return ["NEXT", match[1]];
-        } else if (/^(.+?)\s*<- (.+)$/.test(line)) {
+        } else if (/^(.+?)\s*(<-|=) (.+)$/.test(line)) {
             const match = line.match(/^(.+?)\s*<- (.+)$/);
-            return ["SET", match[1], match[2]];
-        } else if (/^(.+?)\s*= (.+)$/.test(line)) {
-            const match = line.match(/^(.+?)\s*= (.+)$/);
             return ["SET", match[1], match[2]];
         } else if (/^SET\s+(.+?)\s+TO\s+(.+)$/.test(line)) {
             const match = line.match(/^SET\s+(.+?)\s+TO\s+(.+)$/);
@@ -588,10 +584,10 @@ class PseudoInterpreter {
 
             // Handle ENDIF logic
             if(parsedLine[0] === "ENDIF") { 
-                for(let j=0; j < this.elseIfTracker[this.ifCountTracker]; j++) { 
+                for(let j=0; j < this.elseIfTracker[this.ifCountTracker - 1]; j++) { 
                     parsedLines.push(["ENDIF"]); 
                 }
-                this.elseIfTracker[this.ifCountTracker] = 0; 
+                this.elseIfTracker[this.ifCountTracker - 1] = 0; 
                 this.ifCountTracker -= 1; 
             }
 
@@ -674,13 +670,16 @@ class PseudoInterpreter {
                 parsedLines.push(initialLine);
                 let whileLine = ["WHILE", iteratorName + " <= " + parsedLine[3]]; // While line
                 parsedLines.push(whileLine);
+                this.forStepTracker.push(parsedLine[4]);
             }
 
             if (parsedLine[0] === "NEXT") {
                 const iteratorName = parsedLine[1];
-                let nextLine = ["SET", iteratorName, iteratorName + " + 1"]; // Next line
+                let stepValue = String(this.forStepTracker[this.forStepTracker.length - 1]);
+                let nextLine = ["SET", iteratorName, iteratorName + " + " + stepValue]; // Next line
                 parsedLines.push(nextLine);
                 parsedLines.push(["ENDWHILE"]);
+                this.forStepTracker.pop();
             }
 
             if (parsedLine[0] !== "CASE" && parsedLine[0] !== "OTHERWISE" && parsedLine[0] !== "FOR" && parsedLine[0] !== "NEXT") {
