@@ -525,7 +525,6 @@ class PseudoInterpreter {
     parse(pseudocode) {
         const lines = pseudocode.trim().split("\n");
         const parsedLines = [];
-        console.log(lines);
     
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i].trim();
@@ -562,7 +561,7 @@ class PseudoInterpreter {
 
             // Handle ENDIF logic
             if(parsedLine[0] === "ENDIF") { 
-                for(let j=0; j < this.elseIfTracker[this.ifCountTracker - 1]; j++) { 
+                for(let j = 0; j < this.elseIfTracker[this.ifCountTracker - 1]; j++) { 
                     parsedLines.push(["ENDIF"]); 
                 }
                 this.elseIfTracker[this.ifCountTracker - 1] = 0; 
@@ -635,7 +634,7 @@ class PseudoInterpreter {
                     parsedLines.push(caseAction); 
                 }
                 
-                for (let j=0; j < caseCount; j++) {
+                for (let j = 0; j < caseCount; j++) {
                     parsedLines.push(["ENDIF"]);
                 }
             }
@@ -643,11 +642,6 @@ class PseudoInterpreter {
             if (parsedLine[0] !== "CASE" && parsedLine[0] !== "OTHERWISE") {
                 parsedLines.push(parsedLine);
             }
-
-        }
-
-        for (const parsedLine of parsedLines) {
-            console.log(parsedLine);
         }
         return parsedLines;
     }
