@@ -9,7 +9,6 @@ class PseudoInterpreter {
         this.files = {};
         this.ifCountTracker = 0;
         this.elseIfTracker = [];
-        this.forStepTracker = [];
         this.inMultilineComment = false;
         this.globalReturnValue = null;
         this.tempArgs = [];
@@ -292,26 +291,6 @@ class PseudoInterpreter {
         return expr;
     }
 
-    replaceSingleEquals(input) {
-        return input.replace(/(^|[^=!<>])=([^=]|$)/g, '$1==$2');
-    }
-
-    evalLeft(str, x) {
-        // In zero-based indexing, the leftmost x chars go from index 0 up to x
-        return str.substring(0, x);
-    }
-
-    evalRight(str, x) {
-        // In zero-based indexing, we start at str.length - x
-        return str.substring(str.length - x);
-    }
-
-    evalMid(str, x, y) {
-        // Convert 1-based index (x) to zero-based, then retrieve y characters
-        const startIndex = x - 1;
-        return str.substring(startIndex, startIndex + y);
-    }
-
     callFunction(funcName, args) {
         if (!this.functions[funcName]) {
             throw new Error(`Function ${funcName} not defined.`);
@@ -389,7 +368,7 @@ class PseudoInterpreter {
         expr = String(expr);
 
         // Handle strings
-        expr = this.concatenateQuotedStrings(expr);
+        // expr = this.concatenateQuotedStrings(expr);
         if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
             return expr;
         }
@@ -410,7 +389,7 @@ class PseudoInterpreter {
         expr = expr.replace(/\^/g, '**');                                   // Exponentiation
         expr = expr.replace(/MOD/g, '%');                                   // Remainder
         expr = expr.replace(/(\w+)\s+DIV\s+(\w+)/g, 'Math.floor($1 / $2)'); // Floor division
-        expr = this.replaceSingleEquals(expr);                              // Equal to
+        expr = expr.replace(/(^|[^=!<>])=([^=]|$)/g, '$1==$2');                              // Equal to
 
         // Handle LENGTH, LEFT, RIGHT, MID functions
         while (expr.includes("LENGTH(")) {
@@ -424,7 +403,7 @@ class PseudoInterpreter {
             expr = expr.replace(/LEFT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
                 const str = this.removeQuotes(String(this.evalExpression(strExpr.trim())));
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
-                return '"' + String(this.evalLeft(str,len)) + '"';
+                return '"' + String(str.substring(0, len)) + '"';
             });
         }
 
@@ -432,7 +411,7 @@ class PseudoInterpreter {
             expr = expr.replace(/RIGHT\(([^,]+),\s*([^\)]+)\)/g, (match, strExpr, lenExpr) => {
                 const str = this.removeQuotes(String(this.evalExpression(strExpr.trim())));
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
-                return '"' + String(this.evalRight(str,len)) + '"';
+                return '"' + String(str.substring(str.length - len)) + '"';
             });
         }
 
@@ -441,7 +420,7 @@ class PseudoInterpreter {
                 const str = this.removeQuotes(String(this.evalExpression(strExpr.trim())));
                 const start = parseInt(this.evalExpression(startExpr.trim()));
                 const len = parseInt(this.evalExpression(lenExpr.trim()));
-                return '"' + String(this.evalMid(str,start,len)) + '"';
+                return '"' + String(str.substring(start - 1, start - 1 + len)) + '"';
             });
         }
 
@@ -662,27 +641,7 @@ class PseudoInterpreter {
                 }
             }
 
-            // Translate FOR to WHILE
-
-            if (parsedLine[0] === "FOR") {
-                const iteratorName = parsedLine[1];
-                let initialLine = ["SET", iteratorName, parsedLine[2]]; // Initialize iterator
-                parsedLines.push(initialLine);
-                let whileLine = ["WHILE", iteratorName + " <= " + parsedLine[3]]; // While line
-                parsedLines.push(whileLine);
-                this.forStepTracker.push(parsedLine[4]);
-            }
-
-            if (parsedLine[0] === "NEXT") {
-                const iteratorName = parsedLine[1];
-                let stepValue = String(this.forStepTracker[this.forStepTracker.length - 1]);
-                let nextLine = ["SET", iteratorName, iteratorName + " + " + stepValue]; // Next line
-                parsedLines.push(nextLine);
-                parsedLines.push(["ENDWHILE"]);
-                this.forStepTracker.pop();
-            }
-
-            if (parsedLine[0] !== "CASE" && parsedLine[0] !== "OTHERWISE" && parsedLine[0] !== "FOR" && parsedLine[0] !== "NEXT") {
+            if (parsedLine[0] !== "CASE" && parsedLine[0] !== "OTHERWISE") {
                 parsedLines.push(parsedLine);
             }
 
@@ -698,6 +657,7 @@ class PseudoInterpreter {
         let i = 0;
         let whileCount;
         let repeatCount;
+        let forCount;
         let ifCount;
         let currentBlock;
         let procName;
@@ -834,6 +794,7 @@ class PseudoInterpreter {
                     let loopCondition = token[1];
                     whileCount = 1;
                     repeatCount = 0;
+                    forCount = 0;
                     ifCount = 0;
                     i++;
                     let loopBody = [];
@@ -845,11 +806,7 @@ class PseudoInterpreter {
                         } else if (parsedCode[i][0] === 'ENDWHILE') {
                             whileCount--;
                             currentBlock.push(parsedCode[i]);
-                            if (whileCount === 1 && repeatCount === 0 && ifCount === 0) {
-                                if (parsedCode[i+1][0] === 'SET') { // In case of a broken down FOR loop
-                                    i++;
-                                    currentBlock.push(parsedCode[i]);
-                                }
+                            if (whileCount === 1 && repeatCount === 0 && forCount === 0 && ifCount === 0) {
                                 loopBody.push(currentBlock);
                                 currentBlock = [];
                             }
@@ -859,8 +816,18 @@ class PseudoInterpreter {
                         } else if (parsedCode[i][0] === 'UNTIL') {
                             repeatCount--;
                             currentBlock.push(parsedCode[i]);
-                            if (whileCount === 1 && repeatCount === 0 && ifCount === 0) {
-                                repeatBody.push(currentBlock);
+                            if (whileCount === 1 && repeatCount === 0 && forCount === 0 && ifCount === 0) {
+                                loopBody.push(currentBlock);
+                                currentBlock = [];
+                            }
+                        } else if (parsedCode[i][0] === 'FOR') {
+                            forCount++;
+                            currentBlock.push(parsedCode[i]);
+                        } else if (parsedCode[i][0] === 'NEXT') {
+                            forCount--;
+                            currentBlock.push(parsedCode[i]);
+                            if (whileCount === 1 && repeatCount === 0 && forCount === 0 && ifCount === 0) {
+                                loopBody.push(currentBlock);
                                 currentBlock = [];
                             }
                         } else if (parsedCode[i][0] === 'IF') {
@@ -869,7 +836,7 @@ class PseudoInterpreter {
                         } else if (parsedCode[i][0] === 'ENDIF') {
                             ifCount--;
                             currentBlock.push(parsedCode[i]);
-                            if (whileCount === 1 && repeatCount === 0 && ifCount === 0) {
+                            if (whileCount === 1 && repeatCount === 0 && forCount === 0 && ifCount === 0) {
                                 loopBody.push(currentBlock);
                                 currentBlock = [];
                             }
@@ -907,6 +874,7 @@ class PseudoInterpreter {
                     let repeatCondition;
                     whileCount = 0;
                     repeatCount = 1;
+                    forCount = 0;
                     ifCount = 0;
                     i++;
                     let repeatBody = [];
@@ -918,11 +886,7 @@ class PseudoInterpreter {
                         } else if (parsedCode[i][0] === 'ENDWHILE') {
                             whileCount--;
                             currentBlock.push(parsedCode[i]);
-                            if (whileCount === 0 && repeatCount === 1 && ifCount === 0) {
-                                if (parsedCode[i+1][0] === 'SET') { // In case of a broken down FOR loop
-                                    i++;
-                                    currentBlock.push(parsedCode[i]);
-                                }
+                            if (whileCount === 0 && repeatCount === 1 && forCount === 0 && ifCount === 0) {
                                 repeatBody.push(currentBlock);
                                 currentBlock = [];
                             }
@@ -932,7 +896,17 @@ class PseudoInterpreter {
                         } else if (parsedCode[i][0] === 'UNTIL') {
                             repeatCount--;
                             currentBlock.push(parsedCode[i]);
-                            if (whileCount === 0 && repeatCount === 1 && ifCount === 0) {
+                            if (whileCount === 0 && repeatCount === 1 && forCount === 0 && ifCount === 0) {
+                                repeatBody.push(currentBlock);
+                                currentBlock = [];
+                            }
+                        } else if (parsedCode[i][0] === 'FOR') {
+                            forCount++;
+                            currentBlock.push(parsedCode[i]);
+                        } else if (parsedCode[i][0] === 'NEXT') {
+                            forCount--;
+                            currentBlock.push(parsedCode[i]);
+                            if (whileCount === 0 && repeatCount === 1 && forCount === 0 && ifCount === 0) {
                                 repeatBody.push(currentBlock);
                                 currentBlock = [];
                             }
@@ -942,7 +916,7 @@ class PseudoInterpreter {
                         } else if (parsedCode[i][0] === 'ENDIF') {
                             ifCount--;
                             currentBlock.push(parsedCode[i]);
-                            if (whileCount === 0 && repeatCount === 1 && ifCount === 0) {
+                            if (whileCount === 0 && repeatCount === 1 && forCount === 0 && ifCount === 0) {
                                 repeatBody.push(currentBlock);
                                 currentBlock = [];
                             }
@@ -979,6 +953,94 @@ class PseudoInterpreter {
                 
                 case "UNTIL":
                     break;
+
+                case "FOR":
+                    whileCount = 0;
+                    repeatCount = 0;
+                    forCount = 1;
+                    ifCount = 0;
+                    i++;
+                    let forBody = [];
+                    currentBlock = [];
+                    let iteratorName = token[1];
+                    let start = token[2];
+                    let end = token[3];
+                    let stepValue = token[4];
+                    while (!(parsedCode[i][0] === "NEXT" && forCount === 1)) {
+                        if (parsedCode[i][0] === 'WHILE') {
+                            whileCount++;
+                            currentBlock.push(parsedCode[i]);
+                        } else if (parsedCode[i][0] === 'ENDWHILE') {
+                            whileCount--;
+                            currentBlock.push(parsedCode[i]);
+                            if (whileCount === 0 && repeatCount === 0 && forCount === 1 && ifCount === 0) {
+                                forBody.push(currentBlock);
+                                currentBlock = [];
+                            }
+                        } else if (parsedCode[i][0] === 'REPEAT') {
+                            repeatCount++;
+                            currentBlock.push(parsedCode[i]);
+                        } else if (parsedCode[i][0] === 'UNTIL') {
+                            repeatCount--;
+                            currentBlock.push(parsedCode[i]);
+                            if (whileCount === 0 && repeatCount === 0 && forCount === 1 && ifCount === 0) {
+                                forBody.push(currentBlock);
+                                currentBlock = [];
+                            }
+                        } else if (parsedCode[i][0] === 'FOR') {
+                            forCount++;
+                            currentBlock.push(parsedCode[i]);
+                        } else if (parsedCode[i][0] === 'NEXT') {
+                            forCount--;
+                            currentBlock.push(parsedCode[i]);
+                            if (whileCount === 0 && repeatCount === 0 && forCount === 1 && ifCount === 0) {
+                                forBody.push(currentBlock);
+                                currentBlock = [];
+                            }
+                        } else if (parsedCode[i][0] === 'IF') {
+                            ifCount++;
+                            currentBlock.push(parsedCode[i]);
+                        } else if (parsedCode[i][0] === 'ENDIF') {
+                            ifCount--;
+                            currentBlock.push(parsedCode[i]);
+                            if (whileCount === 0 && repeatCount === 0 && forCount === 1 && ifCount === 0) {
+                                forBody.push(currentBlock);
+                                currentBlock = [];
+                            }
+                        } else if (currentBlock.length === 0) {
+                            currentBlock = [parsedCode[i]];
+                            forBody.push(currentBlock);
+                            currentBlock = [];
+                        } else {
+                            currentBlock.push(parsedCode[i]);
+                        }
+                        i++;
+                    }
+                    console.log(forBody);
+                    for (let forIterator = this.evalExpression(start); forIterator <= this.evalExpression(end); forIterator += this.evalExpression(stepValue)) {
+                        this.variables[iteratorName] = forIterator;
+                        for (const currentBlock of forBody) {
+                            this.execute(currentBlock);
+                            if (this.continueFlag) {
+                                break;
+                            }
+                            if (this.breakFlag) {
+                                break;
+                            }
+                        }
+                        if (this.continueFlag) {
+                            this.continueFlag = false;
+                            continue;
+                        }
+                        if (this.breakFlag) {
+                            this.breakFlag = false;
+                            break;
+                        }
+                    }
+                    break;
+
+                case "NEXT":
+                    break;
                 
                 case "CONTINUE":
                     this.continueFlag = true;
@@ -987,9 +1049,6 @@ class PseudoInterpreter {
                 case "BREAK":
                     this.breakFlag = true;
                     break;  
-
-                case "NEXT":
-                    break;
 
                 case "DECLAREARRAY":
                     this.arrays[token[1]] = [];
