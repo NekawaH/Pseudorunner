@@ -279,13 +279,12 @@ class PseudoInterpreter {
 
     turnBooleanCapitalized(expr) {
         if (typeof expr === "boolean") {
-            if (expr) return "TRUE";
-            else return "FALSE";
+            return expr ? "TRUE" : "FALSE"
         }
-        if (expr === 'true') {
+        if (expr === "true") {
             return "TRUE";
         }
-        if (expr === 'false') {
+        if (expr === "false") {
             return "FALSE";
         }
         return expr;
@@ -389,7 +388,7 @@ class PseudoInterpreter {
         expr = expr.replace(/\^/g, '**');                                   // Exponentiation
         expr = expr.replace(/MOD/g, '%');                                   // Remainder
         expr = expr.replace(/(\w+)\s+DIV\s+(\w+)/g, 'Math.floor($1 / $2)'); // Floor division
-        expr = expr.replace(/(^|[^=!<>])=([^=]|$)/g, '$1==$2');                              // Equal to
+        expr = expr.replace(/(^|[^=!<>])=([^=]|$)/g, '$1==$2');             // Equal to
 
         // Handle LENGTH, LEFT, RIGHT, MID functions
         while (expr.includes("LENGTH(")) {
