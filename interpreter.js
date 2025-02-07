@@ -12,14 +12,62 @@ class PseudoInterpreter {
         this.inMultilineComment = false;
         this.globalReturnValue = null;
         this.tempArgs = [];
+        this.popup = false;
     }
 
     tokenize(line) {
-        if (line.startsWith("IF")) {
-            const match = line.match(/^IF (.+) THEN$/);
+        if (line.startsWith("POPUP")) {
+            const match = line.match(/^POPUP ([A-Za-z0-9\[\]<>,]+)$/);
+            return ["POPUP", match[1]];
+        } else if (line.startsWith("OUTPUT")) {
+            const match = line.match(/^OUTPUT\s+(.*)$/);
+            if (match) {
+                const argsString = match[1];
+                const args = [];
+                let currentArg = "";
+                let inQuotes = false;
+                let parenLevel = 0;
+                let bracketLevel = 0;
+    
+                for (let i = 0; i < argsString.length; i++) {
+                    const char = argsString[i];
+    
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                        currentArg += char;
+                    } else if (char === '(') {
+                        parenLevel++;
+                        currentArg += char;
+                    } else if (char === ')') {
+                        parenLevel--;
+                        currentArg += char;
+                    } else if (char === '[') {
+                        bracketLevel++;
+                        currentArg += char;
+                    } else if (char === ']') {
+                        bracketLevel--;
+                        currentArg += char;
+                    } else if (char === ',' && !inQuotes && parenLevel === 0 && bracketLevel === 0) {
+                        args.push(currentArg.trim());
+                        currentArg = "";
+                    } else {
+                        currentArg += char;
+                    }
+                }
+                args.push(currentArg.trim()); // Add the last argument
+                return ["OUTPUT", args];
+            }
+            return null; // Or handle the case where the regex doesn't match as needed
+        } else if (line.startsWith("INPUT")) {
+            const match = line.match(/^INPUT ([A-Za-z0-9\[\]<>,]+)$/);
+            return ["INPUT", match[1]];
+        } else if (line.startsWith("IF")) {
+            const match = line.match(/^IF (.*?)(?: THEN)?$/);
             this.ifCountTracker++;
             this.elseIfTracker.push(0);
-            return ["IF", match[1]];
+            return ["IF", match[1].trim()];
+        } else if (line.startsWith("THEN")) {
+            return ["THEN"];
         } else if (line.startsWith("ELSE IF")) {
             const match = line.match(/^ELSE IF (.+)$/);
             this.elseIfTracker[this.ifCountTracker - 1]++;
@@ -28,12 +76,11 @@ class PseudoInterpreter {
             return ["ELSE"];
         } else if (line === "ENDIF") {
             return ["ENDIF"];
-        } else if ((/^WHILE (.+) DO$/).test(line)) {
-            const match = line.match(/^WHILE (.+) DO$/);
+        } else if ((/^WHILE (.*?)(?: DO)?$/).test(line)) {
+            const match = line.match(/^WHILE (.*?)(?: DO)?$/);
             return ["WHILE", match[1]];
-        } else if ((/^WHILE (.+)$/).test(line)) {
-            const match = line.match(/^WHILE (.+)$/);
-            return ["WHILE", match[1]];
+        } else if (line.startsWith("DO")) {
+            return ["DO"];
         } else if (line === "ENDWHILE") {
             return ["ENDWHILE"];
         } else if (/^FOR (\w+)\s*(<-|=)\s*(.+?)\s*TO\s*(.+?)(\s*STEP\s*(.+?))?$/.test(line)) {
@@ -43,24 +90,11 @@ class PseudoInterpreter {
         } else if (line.startsWith("NEXT")) {
             const match = line.match(/^NEXT (\w+)$/);
             return ["NEXT", match[1]];
-        } else if (/^(.+?)\s*(<-|=) (.+)$/.test(line)) {
-            const match = line.match(/^(.+?)\s*<- (.+)$/);
-            return ["SET", match[1], match[2]];
-        } else if (/^SET\s+(.+?)\s+TO\s+(.+)$/.test(line)) {
-            const match = line.match(/^SET\s+(.+?)\s+TO\s+(.+)$/);
-            return ["SET", match[1], match[2]];
-        } else if (line.startsWith("OUTPUT")) {
-            const match = line.match(/^OUTPUT\s+((?:.+?)(?:,\s+(?:.+?))*)$/);
-            const args = match[1].split(/,\s+/).map(arg => arg.trim());
-            return ["OUTPUT", args];
-        } else if (line.startsWith("INPUT")) {
-            const match = line.match(/^INPUT ([A-Za-z0-9\[\]<>,]+)$/);
-            return ["INPUT", match[1]];
         } else if (line.startsWith("CASE OF")) {
             const match = line.match(/^CASE OF\s+(.*)$/);
             return ["CASE", match[1]];
         } else if (line.startsWith("OTHERWISE")) {
-            const match = line.match(/^OTHERWISE\s*:\s*(.*)/);
+            const match = line.match(/^OTHERWISE\s*(?::\s*)?(.*)/);
             return ["OTHERWISE", match ? match[1].trim() : ""];
         } else if (/^(\S+)\s*TO\s*(\S+)\s*:\s*/.test(line)) {
             const match = line.match(/^(.*?)\s*TO\s*(.*?)\s*:\s*(.*)/);
@@ -89,6 +123,12 @@ class PseudoInterpreter {
             return ["BREAK"];
         } else if (line === "PASS") {
             return ["PASS"];
+        } else if (/^(.+?)\s*(<-|=) (.+)$/.test(line)) {
+            const match = line.match(/^(.+?)\s*(<-|=) (.+)$/);
+            return ["SET", match[1], match[3]];
+        } else if (/^SET\s+(.+?)\s+TO\s+(.+)$/.test(line)) {
+            const match = line.match(/^SET\s+(.+?)\s+TO\s+(.+)$/);
+            return ["SET", match[1], match[2]];
         } else if (/^PROCEDURE\s+(\w+)\((.*?)\)$/.exec(line)) {
             const match = /^PROCEDURE\s+(\w+)\((.*?)\)$/.exec(line);
             const procedureName = match[1];
@@ -257,26 +297,13 @@ class PseudoInterpreter {
 
     removeQuotes(expr) {
         let exprString = String(expr);
-        if ((exprString.startsWith('"') && exprString.endsWith('"')) || (exprString.startsWith("'") && exprString.endsWith("'"))) {
+        if (this.isValidStringExpression(exprString)) {
             return exprString.slice(1, -1);
         } else {
             return expr;
         }
     }
-
-    concatenateQuotedStrings(expr) {
-        // Match all quoted substrings and ignore spaces or empty strings
-        const matches = expr.match(/(["'])(.*?)\1/g);;
-        
-        if (matches) {
-            // Remove the quotes and join the strings
-            const concatenated = matches.map(match => match.slice(1, -1)).join('');
-            return `"${concatenated}"`; // Keep an extra pair of quotes
-        }
-        
-        return expr; // Return empty quotes if no matches found
-    }
-
+      
     turnBooleanCapitalized(expr) {
         if (typeof expr === "boolean") {
             return expr ? "TRUE" : "FALSE"
@@ -362,13 +389,20 @@ class PseudoInterpreter {
         this.tempArgs.pop();
         return;
     }
+
+    isValidStringExpression(expr) {
+        // Regular expression to check for a valid string expression
+        const regex = /^['"][^'"]*['"]$/;
+      
+        // Test the string against the regular expression
+        return regex.test(expr);
+    }
     
     evalExpression(expr) {
         expr = String(expr);
 
         // Handle strings
-        // expr = this.concatenateQuotedStrings(expr);
-        if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
+        if (this.isValidStringExpression(expr)) {
             return expr;
         }
 
@@ -392,7 +426,7 @@ class PseudoInterpreter {
 
         // Handle LENGTH, LEFT, RIGHT, MID functions
         while (expr.includes("LENGTH(")) {
-            expr = expr.replace(/LENGTH\(([^)]+)\)/g, (match, strExpr) => {
+            expr = expr.replace(/LENGTH\(([^)]*\(.*?\)[^)]*|[^()]+)\)/g, (match, strExpr) => {
                 const evaluatedString = this.removeQuotes(this.evalExpression(strExpr.trim()));
                 return evaluatedString.length;
             });
@@ -425,12 +459,12 @@ class PseudoInterpreter {
 
         // Handle UCASE and LCASE functions
         while (expr.includes("UCASE(") || expr.includes("LCASE(")) {
-            expr = expr.replace(/UCASE\(([^)]+)\)/g, (match, strExpr) => {
+            expr = expr.replace(/UCASE\(([^)]*\(.*?\)[^)]*|[^()]+)\)/g, (match, strExpr) => {
                 const evaluatedString = this.removeQuotes(this.evalExpression(strExpr.trim()));
                 return '"' + evaluatedString.toUpperCase() + '"'; // Convert to uppercase
             });
             
-            expr = expr.replace(/LCASE\(([^)]+)\)/g, (match, strExpr) => {
+            expr = expr.replace(/LCASE\(([^)]*\(.*?\)[^)]*|[^()]+)\)/g, (match, strExpr) => {
                 const evaluatedString = this.removeQuotes(this.evalExpression(strExpr.trim()));
                 return '"' + evaluatedString.toLowerCase()+ '"'; // Convert to lowercase
             });
@@ -438,7 +472,7 @@ class PseudoInterpreter {
 
         // Handle INT function
         while (expr.includes("INT(")) {
-            expr = expr.replace(/INT\(([^)]+)\)/g, (match, numExpr) => {
+            expr = expr.replace(/INT\(([^)]*\(.*?\)[^)]*|[^()]+)\)/g, (match, numExpr) => {
                 const evaluatedNumber = this.evalExpression(numExpr.trim());
                 return Math.floor(evaluatedNumber); // Return integer part
             });
@@ -446,7 +480,7 @@ class PseudoInterpreter {
 
         // Handle RAND function
         while (expr.includes("RAND(")) {
-            expr = expr.replace(/RAND\(([^)]+)\)/g, (match, numExpr) => {
+            expr = expr.replace(/RAND\(([^)]*\(.*?\)[^)]*|[^()]+)\)/g, (match, numExpr) => {
                 const upperLimit = this.evalExpression(numExpr.trim());
                 return Math.random() * upperLimit; // Return a random float in [0,x)
             });
@@ -454,7 +488,7 @@ class PseudoInterpreter {
 
         // Handle EOF function (File Management)
         while (expr.includes("EOF(")) {
-            expr = expr.replace(/EOF\(([^)]+)\)/g, (match, fileName) => {
+            expr = expr.replace(/EOF\(([^)]*\(.*?\)[^)]*|[^()]+)\)/g, (match, fileName) => {
                 fileName = this.removeQuotes(this.evalExpression(fileName));
                 let file = this.files[fileName];
                 let fileLines = file[1].split("\n");
@@ -468,13 +502,13 @@ class PseudoInterpreter {
         } while (expr !== this.replaceVariables(expr));
 
         // Regular expression to match 1D and 2D array references
-        const arrayPattern = /([A-Za-z]+)\[(.+?)(?:,(\S+))?\]/g;
+        const arrayPattern = /(\w+)\[(\w+)(?:,\s*(\w+))?\]/g;
+
+        const pattern2 = /^(.*)\[(.+?),(.+?)\]$/;
 
         // Function to replace array references with their evaluated values
         const replaceArrayReferences = (match, arrayName, index1, index2) => {
             if (index2 !== undefined) { // 2D array reference
-                index1 = this.evalExpression(index1);
-                index2 = this.evalExpression(index2);
                 return this.evalArray(`${arrayName}[${this.evalExpression(index1)},${index2}]`);
             } else { // 1D array reference
                 index1 = this.evalExpression(index1);
@@ -510,8 +544,7 @@ class PseudoInterpreter {
         }
 
         // Handle strings
-        expr = this.concatenateQuotedStrings(expr);
-        if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
+        if (this.isValidStringExpression(expr)) {
             return expr;
         }
 
@@ -663,28 +696,32 @@ class PseudoInterpreter {
     
         while (i < parsedCode.length) {
             const token = parsedCode[i];
-            let ref;
+            let reference;
 
             switch (token[0]) {
+                case "POPUP":
+                    this.popup = this.evalExpression(token[1]);
+                    break;
+
                 case "PASS":
                     break;
 
                 case "SET":
-                    ref = this.parseReference(token[1]);
+                    reference = this.parseReference(token[1]);
                     let result = this.evalExpression(token[2]);
                 
                     topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
-                
-                    if (ref.length === 1) {
-                        if (topArgs && ref[0] in topArgs) {
-                            topArgs[ref[0]] = result;
+
+                    if (reference.length === 1) {
+                        if (topArgs && reference[0] in topArgs) {
+                            topArgs[reference[0]] = result;
                         } else {
-                            this.variables[ref[0]] = result;
+                            this.variables[reference[0]] = result;
                         }
-                    } else if (ref.length === 2) {
-                        this.arrays[ref[0]][ref[1]] = result;
-                    } else if (ref.length === 3) {
-                        this.arrays[ref[0]][ref[1]][ref[2]] = result;
+                    } else if (reference.length === 2) {
+                        this.arrays[reference[0]][reference[1]] = result;
+                    } else if (reference.length === 3) {
+                        this.arrays[reference[0]][reference[1]][reference[2]] = result;
                     }
                     break;
                     
@@ -693,28 +730,28 @@ class PseudoInterpreter {
                     const outputValue = outputArgs.map(arg => this.turnBooleanCapitalized(this.removeQuotes(this.evalExpression(arg)))).join(''); // Concatenate evaluated values
                     document.getElementById('outputBox').value += outputValue + '\n'; // Output to text box
                     console.log(outputValue); // Output to console
+                    if (this.popup) alert(outputValue); // Browser popup
                     break;
         
                 case "INPUT":
                     const inputVal = prompt(`Enter value for ${this.replaceArrayVariables(token[1])}:`);
-                    ref = this.parseReference(token[1]);
+                    reference = this.parseReference(token[1]);
                 
                     topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
                     const val = isNaN(inputVal) ? inputVal : Number(inputVal);
                 
-                    if (ref.length === 1) {
-                        if (topArgs && ref[0] in topArgs) {
-                            topArgs[ref[0]] = val;
+                    if (reference.length === 1) {
+                        if (topArgs && reference[0] in topArgs) {
+                            topArgs[reference[0]] = val;
                         } else {
-                            this.variables[ref[0]] = val;
+                            this.variables[reference[0]] = val;
                         }
-                    } else if (ref.length === 2) {
-                        this.arrays[ref[0]][ref[1]] = val;
-                    } else if (ref.length === 3) {
-                        this.arrays[ref[0]][ref[1]][ref[2]] = val;
+                    } else if (reference.length === 2) {
+                        this.arrays[reference[0]][reference[1]] = val;
+                    } else if (reference.length === 3) {
+                        this.arrays[reference[0]][reference[1]][reference[2]] = val;
                     }
                     break;
-                    
 
                 case "IF":
                     const condition = this.evalExpression(token[1]);
@@ -731,7 +768,8 @@ class PseudoInterpreter {
                             if (parsedCode[i][0] === 'ENDIF') {
                                 ifCount--;
                             }
-                            if (ifCount === 1 && (parsedCode[i][0] === 'ELSE' || parsedCode[i][0] === 'ELSE IF')) { // Skip the ELSE block
+                            if (ifCount === 1 && parsedCode[i][0] === 'ELSE') { // Skip the ELSE block
+                                executableCode.pop();
                                 i++;
                                 while (ifCount > 0) {
                                     if (parsedCode[i][0] === 'IF') {
@@ -775,7 +813,11 @@ class PseudoInterpreter {
                             i++;
                         }
                     }
+                    i--; // IF block will skip an extra line
                     break;
+
+                case "THEN":
+                    break;  
                 
                 case "ELSE":
                     break;        
@@ -862,6 +904,9 @@ class PseudoInterpreter {
                         }
                     }
                     break;
+
+                case "DO":
+                    break; 
 
                 case "REPEAT":
                     let repeatCondition;
@@ -1009,7 +1054,6 @@ class PseudoInterpreter {
                         }
                         i++;
                     }
-                    console.log(forBody);
                     for (let forIterator = this.evalExpression(start); forIterator <= this.evalExpression(end); forIterator += this.evalExpression(stepValue)) {
                         this.variables[iteratorName] = forIterator;
                         for (const currentBlock of forBody) {
