@@ -13,6 +13,7 @@ REPEAT // not in cell 1,1
 UNTIL XRow <> 1 AND XColumn <> 1 // not in cell 1,1
 
 Grid[XRow, XColumn] <- 'X'
+OUTPUT "Pos: ", XRow, " ", XColumn
 MaxMove <- 10
 NumberMoves <- 0
 PlayerRow <- 1
