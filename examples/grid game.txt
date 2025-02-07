@@ -1,0 +1,68 @@
+// Set up game
+POPUP TRUE
+DECLARE Grid : ARRAY[1:5,1:5] OF CHAR
+FOR Row <- 1 TO 5
+    FOR Column <- 1 TO 5
+        Grid[Row, Column] <- '' // set grid cells to be empty
+    NEXT Column
+NEXT Row
+
+REPEAT // not in cell 1,1
+    XRow <- INT(RAND(5) + 1) // Random row position between 1 and 5 in GRID 
+    XColumn <- INT(RAND(5) + 1) // Random column position between 1 and 5 in GRID
+UNTIL XRow <> 1 AND XColumn <> 1 // not in cell 1,1
+
+Grid[XRow, XColumn] <- 'X'
+MaxMove <- 10
+NumberMoves <- 0
+PlayerRow <- 1
+PlayerColumn <- 1
+Win <- FALSE
+TempRow <- 0
+TempColumn <- 0
+
+// during game
+WHILE NumberMoves < MaxMove AND NOT Win
+    OUTPUT "Please enter your move, L – Left, R – Right, U – Up or D - Down"
+    REPEAT
+        MoveError <- FALSE
+        TempRow <- PlayerRow
+        TempColumn <- PlayerColumn
+        INPUT PlayerMove
+        CASE OF PlayerMove
+            'L' : TempColumn <- PlayerColumn - 1
+            'R' : TempColumn <- PlayerColumn + 1
+            'U' : TempRow <- PlayerRow - 1
+            'D' : TempRow <- PlayerRow + 1
+            OTHERWISE : MoveError <- TRUE
+        ENDCASE
+
+        // check for out-of-range moves
+        IF TempColumn < 1 OR TempColumn > 5 THEN
+            MoveError <- TRUE
+        ELSE
+            PlayerColumn <- TempColumn
+        ENDIF
+        IF TempRow < 1 OR TempRow > 5 THEN
+            MoveError <- TRUE 
+        ELSE
+            PlayerRow <- TempRow
+        ENDIF
+
+        // check win if X Found
+        IF Grid[PlayerRow, PlayerColumn] = 'X' THEN
+            OUTPUT "You Win"
+            Win <- TRUE
+        ELSE
+            IF MoveError THEN
+                OUTPUT "Invalid move"
+            ELSE
+                NumberMoves <- NumberMoves + 1
+            ENDIF
+        ENDIF
+    UNTIL NOT MoveError
+ENDWHILE
+
+IF NOT Win THEN
+    OUTPUT "You Lose"
+ENDIF
