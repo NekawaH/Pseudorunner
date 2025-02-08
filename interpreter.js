@@ -508,7 +508,7 @@ class PseudoInterpreter {
             });
         }
 
-        // Handle EOF function (File Management)
+        // Handle EOF function
         while (expr.includes("EOF(")) {
             expr = expr.replace(/EOF\(([^)]*\(.*?\)[^)]*|[^()]+)\)/g, (match, fileName) => {
                 fileName = this.removeQuotes(this.evalExpression(fileName));
@@ -524,7 +524,7 @@ class PseudoInterpreter {
         } while (expr !== this.replaceVariables(expr));
 
         // Regular expression to match 1D and 2D array references, excluding those in quotes
-        const arrayPattern = /(?:'([^']*)'|"([^"]*)")|(\w+)\[(\w+)(?:,\s*(\w+))?\]/g;
+        const arrayPattern = /(?:'([^']*)'|"([^"]*)")|(\w+)\[([^\]]+?)(?:,\s*([^\]]+?))?\]/g;
 
         // Function to replace array references with their evaluated values
         const replaceArrayReferences = (match, singleQuoteContent, doubleQuoteContent, arrayName, index1, index2) => {
@@ -533,16 +533,15 @@ class PseudoInterpreter {
             }
 
             if (index2 !== undefined) { // 2D array reference
-                return this.evalArray(`${arrayName}[${this.evalExpression(index1)},${index2}]`);
+                return this.evalArray(`${arrayName}[${this.evalExpression(index1)},${this.evalExpression(index2)}]`);
             } else { // 1D array reference
-                index1 = this.evalExpression(index1);
-                return this.evalArray(`${arrayName}[${index1}]`);
+                return this.evalArray(`${arrayName}[${this.evalExpression(index1)}]`);
             }
         };
 
         // Replace all array references in the expression
         expr = expr.replace(arrayPattern, replaceArrayReferences);
-        
+
         // Detect user-defined function calls using regex (e.g., myFunc(arg1, arg2)), excluding those in quotes
         const userFuncRegex = /(?:'([^']*)'|"([^"]*)")|([A-Za-z_]\w*)\(([^()]*)\)/g;
         let match;
