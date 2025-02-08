@@ -1,0 +1,18 @@
+POPUP TRUE
+DECLARE City : ARRAY[1:100, 1:2] OF STRING
+DECLARE Count : INTEGER
+DECLARE Out : INTEGER
+Count <- 1
+N <- 5
+
+REPEAT
+    OUTPUT "Enter the name of the city"
+    INPUT City[Count, 1]
+    OUTPUT "Enter the name of the country"
+    INPUT City[Count, 2]
+    Count <- Count + 1
+UNTIL Count > N
+
+FOR Out <- 1 TO N
+    OUTPUT "The city ", City[Out, 1], " is in ", City[Out, 2]
+NEXT Out
