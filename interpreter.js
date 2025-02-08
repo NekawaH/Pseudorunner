@@ -17,7 +17,7 @@ class PseudoInterpreter {
 
     tokenize(line) {
         if (line.startsWith("POPUP")) {
-            const match = line.match(/^POPUP ([A-Za-z0-9\[\]<>,]+)$/);
+            const match = line.match(/^POPUP\s+(.*)$/);
             return ["POPUP", match[1]];
         } else if (line.startsWith("OUTPUT")) {
             const match = line.match(/^OUTPUT\s+(.*)$/);
@@ -59,7 +59,7 @@ class PseudoInterpreter {
             }
             return null; // Or handle the case where the regex doesn't match as needed
         } else if (line.startsWith("INPUT")) {
-            const match = line.match(/^INPUT ([A-Za-z0-9\[\]<>,]+)$/);
+            const match = line.match(/^INPUT\s+(.*)$/);
             return ["INPUT", match[1]];
         } else if (line.startsWith("IF")) {
             const match = line.match(/^IF (.*?)(?: THEN)?$/);
@@ -238,50 +238,35 @@ class PseudoInterpreter {
         });
     
         return expr;
-    }    
+    }
     
-    replaceArrayVariables(expr) {
-        const regex = /\b(\w+)\[(\w+)(?:,(\w+))?\]/g;
-        expr = String(expr);
-    
-        // First pass: replace using topArgs
-        expr = expr.replace(regex, (fullMatch, varName, index1, index2) => {
-            const topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
-    
-            // Resolve varName from topArgs
-            let replacedVar = (topArgs && topArgs[varName] !== undefined) ? topArgs[varName] : varName;
-    
-            // Resolve index1 from topArgs
-            let replacedIndex1 = (topArgs && topArgs[index1] !== undefined) ? topArgs[index1] : index1;
-    
-            // Resolve index2 from topArgs if it exists
-            let replacedIndex2;
-            if (index2) {
-                replacedIndex2 = (topArgs && topArgs[index2] !== undefined) ? topArgs[index2] : index2;
+    transformArrayIndexes(expr) {
+        const arrayIndexRegex = /(\w+)\[([^\]]+(?:,[^\]]+)?)\]/g; // Matches Array[i] or Table[i, j]
+        let transformedExpr = expr;
+        let match;
+
+        while ((match = arrayIndexRegex.exec(expr)) !== null) {
+        const arrayName = match[1];
+        const indicesString = match[2];
+        const fullMatch = match[0]; // The entire matched string (e.g., "Grid[i, j]")
+
+        const indices = indicesString.split(',').map(index => {
+            const trimmedIndex = index.trim();
+            const evaluatedIndex = this.evalExpression(trimmedIndex);
+
+            if (evaluatedIndex !== null && evaluatedIndex !== undefined) {
+            return evaluatedIndex;
+            } else {
+            return trimmedIndex; // Keep the original if evaluation fails
             }
-    
-            return replacedIndex2 
-                ? `${replacedVar}[${replacedIndex1},${replacedIndex2}]`
-                : `${replacedVar}[${replacedIndex1}]`;
         });
-    
-        // Second pass: replace using this.variables on the interim result
-        expr = expr.replace(regex, (fullMatch, varName, index1, index2) => {
-            let replacedVar = this.variables[varName] !== undefined ? this.variables[varName] : varName;
-            let replacedIndex1 = this.variables[index1] !== undefined ? this.variables[index1] : index1;
-            
-            let replacedIndex2;
-            if (index2) {
-                replacedIndex2 = this.variables[index2] !== undefined ? this.variables[index2] : index2;
-            }
-    
-            return replacedIndex2 
-                ? `${replacedVar}[${replacedIndex1},${replacedIndex2}]`
-                : `${replacedVar}[${replacedIndex1}]`;
-        });
-    
-        return expr;
-    }    
+
+        const replacement = `${arrayName}[${indices.join(', ')}]`;
+        transformedExpr = transformedExpr.replace(fullMatch, replacement);
+        }
+
+        return transformedExpr;
+    }
     
     parseReference(expr) {
         const pattern1 = /^(.*)\[(.+?)\]$/;
@@ -781,11 +766,25 @@ class PseudoInterpreter {
                     break;
         
                 case "INPUT":
-                    const inputVal = prompt(`Enter value for ${this.replaceArrayVariables(token[1])}:`);
+                    const inputVal = prompt(`Enter value for ${this.transformArrayIndexes(token[1])}:`);
                     reference = this.parseReference(token[1]);
-                
                     topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
-                    const val = isNaN(inputVal) ? inputVal : Number(inputVal);
+
+                    let val;
+                    if (this.isValidStringExpression(inputVal)) {
+                        val = inputVal;
+                    } else if (!isNaN(inputVal) && !isNaN(Number(inputVal))) {
+                        val = Number(inputVal);
+                    } else if (inputVal.toUpperCase() === 'TRUE' || inputVal.toUpperCase() === 'FALSE') {
+                        val = inputVal.toUpperCase();
+                    } else {
+                        const date = new Date(inputVal);
+                        if (!isNaN(date.getTime())) {
+                            val = date;
+                        } else {
+                            val = `"${inputVal}"`;
+                        }
+                    }
                 
                     if (reference.length === 1) {
                         if (topArgs && reference[0] in topArgs) {
