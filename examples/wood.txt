@@ -1,0 +1,62 @@
+POPUP TRUE
+DECLARE WoodType : ARRAY[1:100] OF STRING
+DECLARE Price : ARRAY[1:100] OF REAL
+DECLARE Customers : ARRAY[1:100] OF STRING
+DECLARE Quotations : ARRAY[1:100,1:100] OF REAL
+WoodType[1] <- "Laminate"
+WoodType[2] <- "Pine"
+WoodType[3] <- "Oak"
+Price[1] <- 29.99
+Price[2] <- 39.99
+Price[3] <- 54.99
+CurrentCustomer <- 1
+Cont <- TRUE
+WHILE Cont DO
+	OUTPUT "Input the customer’s name "
+	INPUT Customers[CurrentCustomer]
+	OUTPUT "What is the length of your room? "
+	INPUT RoomLength
+	WHILE RoomLength < 1.5 OR RoomLength > 10.0
+		OUTPUT "The measurement must be in the range 1.5 to 10.0 inclusive, please try again "
+		INPUT RoomLength
+	ENDWHILE
+	OUTPUT "What is the width of your room? "
+	INPUT RoomWidth
+	WHILE RoomWidth < 1.5 OR RoomWidth > 10.0
+		OUTPUT "The measurement must be in the range 1.5 to 10.0 inclusive, please try again "
+		INPUT RoomWidth
+	ENDWHILE
+	RoomArea <- INT(RoomLength * RoomWidth)
+    OUTPUT "Room area: ", RoomArea
+	OUTPUT "the wood choices available are:"
+ 	OUTPUT "Number Wood Type Price($)"
+	FOR Count <- 1 TO 3
+		OUTPUT Count, " ", WoodType[Count], " ", Price[Count]
+	NEXT Count
+	OUTPUT "Input a number from 1 to 3 "
+	INPUT WoodChoice
+	WHILE WoodChoice < 1 OR WoodChoice > 3
+		OUTPUT "Your input is out of range, please try again "
+		INPUT WoodChoice
+	ENDWHILE
+	WoodCost <- RoomArea * Price[WoodChoice]
+	Quotations[CurrentCustomer, 1] <- RoomLength
+	Quotations[CurrentCustomer, 2] <- RoomWidth
+	Quotations[CurrentCustomer, 3] <- RoomArea
+	Quotations[CurrentCustomer, 4] <- WoodChoice
+	Quotations[CurrentCustomer, 5] <- WoodCost
+	OUTPUT "Customer name: ", Customers[CurrentCustomer]
+	OUTPUT "The wood you have chosen is: ", WoodType[WoodChoice]
+	OUTPUT "Your total price is: ", Quotations[CurrentCustomer,5]
+	CurrentCustomer <- CurrentCustomer + 1
+    OUTPUT "Another Customer? (TRUE/FALSE)"
+    INPUT Cont
+    WHILE Cont <> TRUE AND Cont <> FALSE
+		OUTPUT "Invalid input, please try again "
+		INPUT Cont
+	ENDWHILE
+	IF CurrentCustomer > 100
+	  THEN
+		BREAK
+	ENDIF
+ENDWHILE
