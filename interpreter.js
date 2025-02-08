@@ -418,19 +418,6 @@ class PseudoInterpreter {
             return expr;
         }
 
-        // Replace logical and comparison operators
-        expr = expr.replace(/(?<!&)&(?!&)/g, '+');                          // String Concatenation
-        expr = expr.replace(/<>/g, '!=');                                   // Not equal to
-        expr = expr.replace(/\bAND\b/g, '&&');                              // And
-        expr = expr.replace(/OR/g, '||');                                   // Or
-        expr = expr.replace(/NOT/g, '!');                                   // Not
-        expr = expr.replace(/TRUE/g, 'true');                               // True
-        expr = expr.replace(/FALSE/g, 'false');                             // False
-        expr = expr.replace(/\^/g, '**');                                   // Exponentiation
-        expr = expr.replace(/MOD/g, '%');                                   // Remainder
-        expr = expr.replace(/(\w+)\s+DIV\s+(\w+)/g, 'Math.floor($1 / $2)'); // Floor division
-        expr = expr.replace(/(^|[^=!<>])=([^=]|$)/g, '$1==$2');             // Equal to
-
         // Replace variables in the expression with their values
         do {
             expr = this.replaceVariables(expr);
@@ -484,6 +471,19 @@ class PseudoInterpreter {
                 userFuncRegex.lastIndex = 0;
             }
         }
+
+        // Replace logical and comparison operators
+        expr = expr.replace(/(?<!&)&(?!&)/g, '+');                          // String Concatenation
+        expr = expr.replace(/<>/g, '!=');                                   // Not equal to
+        expr = expr.replace(/\bAND\b/g, '&&');                              // And
+        expr = expr.replace(/OR/g, '||');                                   // Or
+        expr = expr.replace(/NOT/g, '!');                                   // Not
+        expr = expr.replace(/TRUE/g, 'true');                               // True
+        expr = expr.replace(/FALSE/g, 'false');                             // False
+        expr = expr.replace(/\^/g, '**');                                   // Exponentiation
+        expr = expr.replace(/MOD/g, '%');                                   // Remainder
+        expr = expr.replace(/(\w+)\s+DIV\s+(\w+)/g, 'Math.floor($1 / $2)'); // Floor division
+        expr = expr.replace(/(^|[^=!<>])=([^=]|$)/g, '$1==$2');             // Equal to
 
         // Handle LENGTH, LEFT, RIGHT, MID functions
         while (expr.includes("LENGTH(")) {
