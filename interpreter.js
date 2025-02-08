@@ -446,6 +446,60 @@ class PseudoInterpreter {
         expr = expr.replace(/(\w+)\s+DIV\s+(\w+)/g, 'Math.floor($1 / $2)'); // Floor division
         expr = expr.replace(/(^|[^=!<>])=([^=]|$)/g, '$1==$2');             // Equal to
 
+        // Replace variables in the expression with their values
+        do {
+            expr = this.replaceVariables(expr);
+        } while (expr !== this.replaceVariables(expr));
+
+        // Regular expression to match 1D and 2D array references, excluding those in quotes
+        const arrayPattern = /(?:'([^']*)'|"([^"]*)")|(\w+)\[([^\]]+?)(?:,\s*([^\]]+?))?\]/g;
+
+        // Function to replace array references with their evaluated values
+        const replaceArrayReferences = (match, singleQuoteContent, doubleQuoteContent, arrayName, index1, index2) => {
+            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
+                return match; // It's a quoted string, so return it as is
+            }
+
+            if (index2 !== undefined) { // 2D array reference
+                return this.evalArray(`${arrayName}[${this.evalExpression(index1)},${this.evalExpression(index2)}]`);
+            } else { // 1D array reference
+                return this.evalArray(`${arrayName}[${this.evalExpression(index1)}]`);
+            }
+        };
+
+        // Replace all array references in the expression
+        expr = expr.replace(arrayPattern, replaceArrayReferences);
+
+        // Detect user-defined function calls using regex (e.g., myFunc(arg1, arg2)), excluding those in quotes
+        const userFuncRegex = /(?:'([^']*)'|"([^"]*)")|([A-Za-z_]\w*)\(([^()]*)\)/g;
+        let match;
+
+        while ((match = userFuncRegex.exec(expr)) !== null) {
+            const singleQuoteContent = match[1];
+            const doubleQuoteContent = match[2];
+            const fullMatch = match[0];
+            const funcName = match[3];   // e.g., "myFunc"
+            const argString = match[4];  // e.g., "a + 1, b"
+
+            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
+                continue; // It's a quoted string, skip it
+            }
+
+            if (this.functions[funcName]) {
+                // Split arguments by comma and evaluate each
+                const argValues = argString.split(",").map(arg => arg.trim());
+
+                // Call the user-defined function and get its result
+                const result = this.callFunction(funcName, argValues);
+
+                // Replace function call in expression with its result
+                expr = expr.replace(fullMatch, result);
+
+                // Reset regex index for further matches in modified expression
+                userFuncRegex.lastIndex = 0;
+            }
+        }
+
         // Handle LENGTH, LEFT, RIGHT, MID functions
         while (expr.includes("LENGTH(")) {
             expr = expr.replace(/LENGTH\(([^)]*\(.*?\)[^)]*|[^()]+)\)/g, (match, strExpr) => {
@@ -514,62 +568,25 @@ class PseudoInterpreter {
                 fileName = this.removeQuotes(this.evalExpression(fileName));
                 let file = this.files[fileName];
                 let fileLines = file[1].split("\n");
-                return file[0] >= fileLines.length ? 1 : 0;
+                return file[0] >= fileLines.length ? "true" : "false";
             });
         }
 
-        // Replace variables in the expression with their values
-        do {
-            expr = this.replaceVariables(expr);
-        } while (expr !== this.replaceVariables(expr));
+        // Handle MIN and MAX functions
+        while (expr.includes("MIN(")) {
+            expr = expr.replace(/MIN\(([^,]+?)(,(?![^[]*]))([^,]+?)\)/g, (match, expr1, comma, expr2) => {
+                const val1 = this.evalExpression(expr1.trim());
+                const val2 = this.evalExpression(expr2.trim());
+                return Math.min(val1, val2);
+            });
+        }
 
-        // Regular expression to match 1D and 2D array references, excluding those in quotes
-        const arrayPattern = /(?:'([^']*)'|"([^"]*)")|(\w+)\[([^\]]+?)(?:,\s*([^\]]+?))?\]/g;
-
-        // Function to replace array references with their evaluated values
-        const replaceArrayReferences = (match, singleQuoteContent, doubleQuoteContent, arrayName, index1, index2) => {
-            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
-                return match; // It's a quoted string, so return it as is
-            }
-
-            if (index2 !== undefined) { // 2D array reference
-                return this.evalArray(`${arrayName}[${this.evalExpression(index1)},${this.evalExpression(index2)}]`);
-            } else { // 1D array reference
-                return this.evalArray(`${arrayName}[${this.evalExpression(index1)}]`);
-            }
-        };
-
-        // Replace all array references in the expression
-        expr = expr.replace(arrayPattern, replaceArrayReferences);
-
-        // Detect user-defined function calls using regex (e.g., myFunc(arg1, arg2)), excluding those in quotes
-        const userFuncRegex = /(?:'([^']*)'|"([^"]*)")|([A-Za-z_]\w*)\(([^()]*)\)/g;
-        let match;
-
-        while ((match = userFuncRegex.exec(expr)) !== null) {
-            const singleQuoteContent = match[1];
-            const doubleQuoteContent = match[2];
-            const fullMatch = match[0];
-            const funcName = match[3];   // e.g., "myFunc"
-            const argString = match[4];  // e.g., "a + 1, b"
-
-            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
-                continue; // It's a quoted string, skip it
-            }
-
-            if (this.functions[funcName]) {
-                // Split arguments by comma and evaluate each
-                const argValues = argString.split(",").map(arg => arg.trim());
-
-                // Call the user-defined function and get its result
-                const result = this.callFunction(funcName, argValues);
-
-                // Replace function call in expression with its result
-                expr = expr.replace(fullMatch, result);
-
-                // Reset regex index for further matches in modified expression
-                userFuncRegex.lastIndex = 0;
-            }
+        while (expr.includes("MAX(")) {
+            expr = expr.replace(/MAX\(([^,]+?)(,(?![^[]*]))([^,]+?)\)/g, (match, expr1, comma, expr2) => {
+                const val1 = this.evalExpression(expr1.trim());
+                const val2 = this.evalExpression(expr2.trim());
+                return Math.max(val1, val2);
+            });
         }
 
         // Handle strings
