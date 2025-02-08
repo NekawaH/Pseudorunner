@@ -109,14 +109,15 @@ class PseudoInterpreter {
         } else if (/^UNTIL\s+(.*)$/.test(line)) {
             const match = line.match(/^UNTIL\s+(.*)$/);
             return ["UNTIL", match[1]];
+        } else if (/^DECLARE\s+(\w+)\s*:\s*(\w+)$/.test(line)) {
+            const match = line.match(/^DECLARE\s+(\w+)\s*:\s*(\w+)$/);
+            return ["DECLAREVAR", match[1], match[2]];
         } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
             const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
             return ["DECLAREARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], match[4]];
         } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
             const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
             return ["DECLARE2DARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], [parseInt(match[4], 10), parseInt(match[5], 10)], match[6]];
-        } else if (line.startsWith("DECLARE")) {
-            return ["DECLAREVAR"];
         } else if (line === "CONTINUE") {
             return ["CONTINUE"];
         } else if (line === "BREAK") {
@@ -202,21 +203,42 @@ class PseudoInterpreter {
 
     // Utilities
 
+    findInitialValue(expr) {
+        if (expr === "INTEGER" || expr === "INT" || expr === "REAL" || expr === "FLOAT") {
+            return 0
+        }
+        if (expr === "CHARACTER" || expr === "CHAR" || expr === "STRING" || expr === "STR") {
+            return "";
+        }
+        if (expr === "BOOLEAN" || expr === "BOOL") {
+            return false;
+        }
+        return null;
+    }
+
     replaceVariables(expr) {
         expr = String(expr);
-        // First pass: replace using topArgs
-        expr = expr.replace(/\b\w+\b/g, (match) => {
+    
+        // First pass: replace using topArgs (excluding quoted parts)
+        expr = expr.replace(/(?:'([^']*)'|"([^"]*)")|\b\w+\b/g, (match, singleQuoteContent, doubleQuoteContent) => {
+            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
+                return match; // It's a quoted string, so return it as is
+            }
+    
             const topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
             return topArgs && topArgs[match] !== undefined ? topArgs[match] : match;
         });
     
-        // Second pass: replace using this.variables on the interim result
-        expr = expr.replace(/\b\w+\b/g, (match) => {
+        // Second pass: replace using this.variables (excluding quoted parts)
+        expr = expr.replace(/(?:'([^']*)'|"([^"]*)")|\b\w+\b/g, (match, singleQuoteContent, doubleQuoteContent) => {
+            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
+                return match; // It's a quoted string, so return it as is
+            }
             return this.variables[match] !== undefined ? this.variables[match] : match;
         });
     
         return expr;
-    }
+    }    
     
     replaceArrayVariables(expr) {
         const regex = /\b(\w+)\[(\w+)(?:,(\w+))?\]/g;
@@ -392,7 +414,7 @@ class PseudoInterpreter {
 
     isValidStringExpression(expr) {
         // Regular expression to check for a valid string expression
-        const regex = /^['"][^'"]*['"]$/;
+        const regex = /^(["'])(?:(?!\1).)*\1$/;
       
         // Test the string against the regular expression
         return regex.test(expr);
@@ -501,13 +523,15 @@ class PseudoInterpreter {
             expr = this.replaceVariables(expr);
         } while (expr !== this.replaceVariables(expr));
 
-        // Regular expression to match 1D and 2D array references
-        const arrayPattern = /(\w+)\[(\w+)(?:,\s*(\w+))?\]/g;
-
-        const pattern2 = /^(.*)\[(.+?),(.+?)\]$/;
+        // Regular expression to match 1D and 2D array references, excluding those in quotes
+        const arrayPattern = /(?:'([^']*)'|"([^"]*)")|(\w+)\[(\w+)(?:,\s*(\w+))?\]/g;
 
         // Function to replace array references with their evaluated values
-        const replaceArrayReferences = (match, arrayName, index1, index2) => {
+        const replaceArrayReferences = (match, singleQuoteContent, doubleQuoteContent, arrayName, index1, index2) => {
+            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
+                return match; // It's a quoted string, so return it as is
+            }
+
             if (index2 !== undefined) { // 2D array reference
                 return this.evalArray(`${arrayName}[${this.evalExpression(index1)},${index2}]`);
             } else { // 1D array reference
@@ -519,25 +543,31 @@ class PseudoInterpreter {
         // Replace all array references in the expression
         expr = expr.replace(arrayPattern, replaceArrayReferences);
         
-        // Detect user-defined function calls using regex (e.g., myFunc(arg1, arg2))
-        const userFuncRegex = /([A-Za-z_]\w*)\(([^()]*)\)/g;
+        // Detect user-defined function calls using regex (e.g., myFunc(arg1, arg2)), excluding those in quotes
+        const userFuncRegex = /(?:'([^']*)'|"([^"]*)")|([A-Za-z_]\w*)\(([^()]*)\)/g;
         let match;
-        
+
         while ((match = userFuncRegex.exec(expr)) !== null) {
-            const fullMatch = match[0];   // e.g., "myFunc(a + 1, b)"
-            const funcName = match[1];   // e.g., "myFunc"
-            const argString = match[2];  // e.g., "a + 1, b"
+            const singleQuoteContent = match[1];
+            const doubleQuoteContent = match[2];
+            const fullMatch = match[0];
+            const funcName = match[3];   // e.g., "myFunc"
+            const argString = match[4];  // e.g., "a + 1, b"
+
+            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
+                continue; // It's a quoted string, skip it
+            }
 
             if (this.functions[funcName]) {
                 // Split arguments by comma and evaluate each
                 const argValues = argString.split(",").map(arg => arg.trim());
-                
+
                 // Call the user-defined function and get its result
                 const result = this.callFunction(funcName, argValues);
 
                 // Replace function call in expression with its result
                 expr = expr.replace(fullMatch, result);
-                
+
                 // Reset regex index for further matches in modified expression
                 userFuncRegex.lastIndex = 0;
             }
@@ -689,6 +719,7 @@ class PseudoInterpreter {
         let procName;
         let defParams;
         let topArgs;
+        let initialValue;
         let file;
         let fileLine;
         let fileLines;
@@ -1081,24 +1112,30 @@ class PseudoInterpreter {
                 
                 case "CONTINUE":
                     this.continueFlag = true;
-                    break; 
+                    break;
                     
                 case "BREAK":
                     this.breakFlag = true;
-                    break;  
-
-                case "DECLAREARRAY":
-                    this.arrays[token[1]] = [];
-                    break;
-                
-                case "DECLARE2DARRAY":
-                    this.arrays[token[1]] = [];
-                    for (let i = 0; i < 114514; i++) {
-                        this.arrays[token[1]][i] = [];
-                    }
                     break;
 
                 case "DECLAREVAR":
+                    initialValue = this.findInitialValue(token[2]);
+                    this.variables[token[1]] = initialValue;
+                    break;
+
+                case "DECLAREARRAY":
+                    initialValue = this.findInitialValue(token[3]);
+                    this.arrays[token[1]] = Array(token[2][1] + 1);
+                    this.arrays[token[1]].fill(initialValue);
+                    break;
+                
+                case "DECLARE2DARRAY":
+                    initialValue = this.findInitialValue(token[4]);
+                    this.arrays[token[1]] = Array(token[2][1] + 1);
+                    for (let i = 0; i < token[2][1] + 1; i++) {
+                        this.arrays[token[1]][i] = Array(token[3][1] + 1);
+                        this.arrays[token[1]][i].fill(initialValue);
+                    }
                     break;
                 
                 case "FUNCTIONDEF":
