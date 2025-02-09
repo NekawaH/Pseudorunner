@@ -36,7 +36,10 @@ a <= b    // Less Than or Equal To</code></pre>
 <p><strong>Example:</strong> <code>OUTPUT "hello world"</code>, <code>OUTPUT 114514</code>, <code>OUTPUT totalScore</code></p>
 
 <h3><strong>ASSIGNMENT</strong></h3>
-<pre><code>SET &lt;identifier&gt; TO &lt;value&gt; (also support &lt;identifier&gt; &lt;- &lt;value&gt; and &lt;identifier&gt; = &lt;value&gt;)</code></pre>
+<pre><code>SET &lt;identifier&gt; TO &lt;value&gt;
+&lt;identifier&gt; &lt;- &lt;value&gt;
+&lt;identifier&gt; = &lt;value&gt;
+</code></pre>
 <p><strong>Example:</strong> <code>SET x TO 10</code>, <code>x &lt;- 10</code>, <code>x = 10</code></p>
 
 <h3><strong>WHILE</strong></h3>
