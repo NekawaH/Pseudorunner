@@ -3,6 +3,7 @@ class PseudoInterpreter {
         this.continueFlag = false;
         this.breakFlag = false;
         this.variables = {};
+        this.constants = {};
         this.arrays = {};
         this.procedures = {};
         this.functions = {};
@@ -124,6 +125,9 @@ class PseudoInterpreter {
             return ["BREAK"];
         } else if (line === "PASS") {
             return ["PASS"];
+        } else if (/^CONSTANT (.+?)\s*(<-|=) (.+)$/.test(line)) {
+            const match = line.match(/^CONSTANT (.+?)\s*(<-|=) (.+)$/);
+            return ["CONSTANT", match[1], match[3]];
         } else if (/^(.+?)\s*(<-|=) (.+)$/.test(line)) {
             const match = line.match(/^(.+?)\s*(<-|=) (.+)$/);
             return ["SET", match[1], match[3]];
@@ -235,6 +239,19 @@ class PseudoInterpreter {
                 return match; // It's a quoted string, so return it as is
             }
             return this.variables[match] !== undefined ? this.variables[match] : match;
+        });
+    
+        return expr;
+    }
+
+    replaceConstants(expr) {
+        expr = String(expr);
+    
+        expr = expr.replace(/(?:'([^']*)'|"([^"]*)")|\b\w+\b/g, (match, singleQuoteContent, doubleQuoteContent) => {
+            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
+                return match; // It's a quoted string, so return it as is
+            }
+            return this.constants[match] !== undefined ? this.constants[match] : match;
         });
     
         return expr;
@@ -418,10 +435,15 @@ class PseudoInterpreter {
             return expr;
         }
 
-        // Replace variables in the expression with their values
-        do {
+        // Replace variables and constants in the expression with their values
+        while (expr !== this.replaceVariables(expr)) {
             expr = this.replaceVariables(expr);
-        } while (expr !== this.replaceVariables(expr));
+        }
+        console.log(expr);
+        console.log(this.replaceConstants(expr));
+        while (expr !== this.replaceConstants(expr)) {
+            expr = this.replaceConstants(expr);
+        }
 
         // Regular expression to match 1D and 2D array references, excluding those in quotes
         const arrayPattern = /(?:'([^']*)'|"([^"]*)")|(\w+)\[([^\]]+?)(?:,\s*([^\]]+?))?\]/g;
@@ -725,6 +747,7 @@ class PseudoInterpreter {
         let fileLine;
         let fileLines;
         let fileName;
+        let val;
     
         while (i < parsedCode.length) {
             const token = parsedCode[i];
@@ -748,13 +771,35 @@ class PseudoInterpreter {
                         if (topArgs && reference[0] in topArgs) {
                             topArgs[reference[0]] = result;
                         } else {
-                            this.variables[reference[0]] = result;
+                            if (this.constants[reference[0]] === undefined) {
+                                this.variables[reference[0]] = result;
+                            } else {
+                                throw new SyntaxError(`Cannot overwrite constant: ${reference[0]}`);
+                            }
                         }
                     } else if (reference.length === 2) {
                         this.arrays[reference[0]][reference[1]] = result;
                     } else if (reference.length === 3) {
                         this.arrays[reference[0]][reference[1]][reference[2]] = result;
                     }
+                    break;
+
+                case "CONSTANT":
+                    if (this.isValidStringExpression(token[2])) {
+                        val = token[2];
+                    } else if (!isNaN(token[2]) && !isNaN(Number(token[2]))) {
+                        val = Number(token[2]);
+                    } else if (token[2].toUpperCase() === 'TRUE' || token[2].toUpperCase() === 'FALSE') {
+                        val = token[2].toUpperCase();
+                    } else {
+                        const date = new Date(token[2]);
+                        if (!isNaN(date.getTime())) {
+                            val = date;
+                        } else {
+                            val = `"${token[2]}"`;
+                        }
+                    }
+                    this.constants[token[1]] = val;
                     break;
                     
                 case "OUTPUT":
@@ -770,7 +815,6 @@ class PseudoInterpreter {
                     reference = this.parseReference(token[1]);
                     topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
 
-                    let val;
                     if (this.isValidStringExpression(inputVal)) {
                         val = inputVal;
                     } else if (!isNaN(inputVal) && !isNaN(Number(inputVal))) {
@@ -790,7 +834,11 @@ class PseudoInterpreter {
                         if (topArgs && reference[0] in topArgs) {
                             topArgs[reference[0]] = val;
                         } else {
-                            this.variables[reference[0]] = val;
+                            if (this.constants[reference[0]] === undefined) {
+                                this.variables[reference[0]] = result;
+                            } else {
+                                throw new SyntaxError(`Cannot overwrite constant: ${reference[0]}`);
+                            }
                         }
                     } else if (reference.length === 2) {
                         this.arrays[reference[0]][reference[1]] = val;
