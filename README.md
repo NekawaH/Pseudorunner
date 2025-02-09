@@ -38,7 +38,7 @@ a <= b    // Less Than or Equal To</code></pre>
 <p><strong>Example:</strong> <code>OUTPUT "hello world"</code>, <code>OUTPUT 114514</code>, <code>OUTPUT totalScore</code></p>
 
 <h3><strong>ASSIGNMENT</strong></h3>
-<pre><code>SET &lt;identifier&gt; TO &lt;value&gt; &lpar;also support &lt;identifier&gt; &lt;- &lt;value&gt; and &lt;identifier&gt; = &lt;value&gt;&rpar;</code></pre>
+<pre><code>SET &lt;identifier&gt; TO &lt;value&gt; (also support &lt;identifier&gt; &lt;- &lt;value&gt; and &lt;identifier&gt; = &lt;value&gt;)</code></pre>
 <p><strong>Example:</strong> <code>SET x TO 10</code>, <code>x &lt;- 10</code>, <code>x = 10</code></p>
 
 <h3><strong>WHILE</strong></h3>
@@ -105,6 +105,15 @@ ENDCASE</code></pre>
     OTHERWISE : OUTPUT "Score out of range"
 ENDCASE</code></pre>
 
+<h3><strong>VARIABLE</strong></h3>
+<pre><code>DECLARE &lt;identifier&gt; : &ltdata type&gt;
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>DECLARE Count : INTEGER
+DECLARE Name : STRING
+DECLARE Finished : BOOLEAN
+</code></pre>
+
 <h3><strong>ARRAY</strong></h3>
 <pre><code>DECLARE &lt;identifier&gt;:ARRAY[&lt;lower&gt;:&lt;upper&gt;] OF &ltdata type&gt;
 DECLARE &lt;identifier&gt;:ARRAY[&lt;lower1&gt;:&lt;upper1&gt;,&lt;lower2&gt;:&lt;upper2&gt;] OF &ltdata type&gt;
@@ -117,60 +126,89 @@ NoughtsAndCrosses[2,3] &lt;- 'X'
 StudentNames[n+1] &lt;- StudentNames[n]</code></pre>
 
 <h3><strong>STRING</strong></h3>
-<pre><code>LEFT&lpar;&lt;string&gt;,&lt;length&gt;&rpar;
-RIGHT&lpar;&lt;string&gt;,&lt;length&gt;&rpar;
-MID&lpar;&lt;string&gt;,&lt;position&gt;,&lt;length&gt;&rpar;
-LENGTH&lpar;&lt;string&gt;&rpar;
-UCASE&lpar;&lt;string&gt;&rpar;
-LCASE&lpar;&lt;string&gt;&rpar;
+<pre><code>LEFT(&lt;string&gt;,&lt;length&gt;)
+RIGHT(&lt;string&gt;,&lt;length&gt;)
+MID(&lt;string&gt;,&lt;position&gt;,&lt;length&gt;)
+LENGTH(&lt;string&gt;)
+UCASE(&lt;string&gt;)
+LCASE(&lt;string&gt;)
 </code></pre>
 <p><strong>Example:</strong></p>
-<pre><code>LEFT&lpar;&quot;ABCDEFGH&quot;,3&rpar; // Returns &quot;ABC&quot;
-RIGHT&lpar;&quot;ABCDEFGH&quot;,3&rpar; // Returns &quot;FGH&quot;
-MID&lpar;&quot;ABCDEFGH&quot;,2,3&rpar; // Returns &quot;BCD&quot;
-LENGTH&lpar;"HELLO world"&rpar; // Returns 11
-UCASE&lpar;"HELLO world"&rpar; // Returns &quot;HELLO WORLD&quot;
-LCASE&lpar;"HELLO world"&rpar; // Returns &quot;hello world&quot;
+<pre><code>LEFT("ABCDEFGH",3) // Returns "ABC"
+RIGHT("ABCDEFGH",3) // Returns "FGH"
+MID("ABCDEFGH",2,3) // Returns "BCD"
+LENGTH("HELLO world") // Returns 11
+UCASE("HELLO world") // Returns "HELLO WORLD"
+LCASE("HELLO world") // Returns "hello world"
 </code></pre>
 
 <h3><strong>RANDOM</strong></h3>
-<pre><code>RAND&lpar;&lt;number&gt;&rpar;
+<pre><code>RAND(&lt;number&gt;)
 </code></pre>
 <p><strong>Example:</strong></p>
-<pre><code>RAND&lpar;85&rpar; // Returns a real number between &#91;0,85&rpar;
+<pre><code>RAND(85) // Returns a real number between &#91;0,85)
 </code></pre>
 
 <h3><strong>FUNCTION</strong></h3>
-<pre><code>FUNCTION &lt;identifier&gt;&lpar;&lt;param&gt; : &lt;data type&gt;&rpar; RETURNS &lt;data type&gt;
+<pre><code>FUNCTION &lt;identifier&gt;(&lt;param&gt; : &lt;data type&gt;) RETURNS &lt;data type&gt;
     &lt;statements&gt;
     ...
     RETURN &lt;value&gt;
 ENDFUNCTION
 </code></pre>
 <p><strong>Example:</strong></p>
-<pre><code>FUNCTION add&lpar;x : REAL, y : REAL&rpar; RETURNS REAL
+<pre><code>FUNCTION add(x : REAL, y : REAL) RETURNS REAL
     RETURN x + y
 ENDFUNCTION
 // Outputs 3
-OUTPUT add&lpar;1,2&rpar;</code></pre>
+OUTPUT add(1,2)</code></pre>
 
 <h3><strong>PROCEDURE</strong></h3>
-<pre><code>PROCEDURE &lt;identifier&gt;&lpar;&lt;BYVAL/BYREF&gt; &lt;param&gt; : &lt;data type&gt; ...&rpar;
+<pre><code>PROCEDURE &lt;identifier&gt;(&lt;BYVAL/BYREF&gt; &lt;param&gt; : &lt;data type&gt; ...)
     &lt;statements&gt;
     ...
 ENDPROCEDURE
-CALL &lt;identifier&gt;&lpar;&lt;params&gt;&rpar;
+CALL &lt;identifier&gt;(&lt;params&gt;)
 </code></pre>
 <p><strong>Example:</strong></p>
-<pre><code>PROCEDURE swap&lpar;BYREF x : REAL, y : REAL&rpar;
+<pre><code>PROCEDURE swap(BYREF x : REAL, y : REAL)
     temp &lt;- x
     x &lt;- y
     y &lt;- temp
 ENDPROCEDURE
 a &lt;- 1
 b &lt;- 2
-CALL swap&lpar;a,b&rpar;
-OUTPUT a, &quot; &quot;, b // Outputs 2 1</code></pre>
+CALL swap(a,b)
+OUTPUT a, " ", b // Outputs 2 1</code></pre>
+
+<h3><strong>FILE HANDLING</strong></h3>
+<pre><code>OPENFILE &lt;file identifier&gt; FOR &lt;file mode&gt;
+READFILE &lt;file identifier&gt;, &lt;variable&gt;
+WRITEFILE &lt;file identifier&gt;, &lt;data&gt;
+CLOSEFILE &lt;file identifier&gt;
+EOF(&lt;file identifier&gt;)
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>OPENFILE "File.txt" FOR WRITE
+WRITEFILE "File.txt", "Hello world"
+CLOSEFILE "File.txt"
+OPENFILE "File.txt" FOR APPEND
+WRITEFILE "File.txt", "Another line"
+CLOSEFILE "File.txt"
+OPENFILE "File.txt" FOR READ
+WHILE NOT EOF("File.txt")
+    READFILE "File.txt", text
+    OUTPUT text
+ENDWHILE</code></pre>
+
+<h3><strong>BROWSER POPUP</strong></h3>
+<pre><code>POPUP &lt;boolean&gt;</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>POPUP TRUE
+OUTPUT "This message will pop up in your browser"
+POPUP FALSE
+OUTPUT "But this one will not"
+</code></pre>
 
 </body>
 </html>
