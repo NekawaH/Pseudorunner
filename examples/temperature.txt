@@ -1,0 +1,58 @@
+POPUP TRUE
+DECLARE Temperatures : ARRAY[1:24,1:7] OF REAL
+
+Hours <- 24
+Days <- 7
+MaxWeek <- -1000
+MinWeek <- 1000
+WeekTotal <- 0
+
+FOR DayCounter <- 0 TO Days - 1
+
+    MaxDay <- -1000
+    MinDay <- 1000
+    DayTotal <- 0
+    FOR HourCounter <- 0 TO Hours - 1
+        DayTotal <- DayTotal + Temperatures[HourCounter, DayCounter]
+        IF Temperatures[HourCounter, DayCounter] > MaxDay
+          THEN
+            MaxDay <- Temperatures[HourCounter, DayCounter]
+        ENDIF
+        IF Temperatures[HourCounter, DayCounter] < MinDay
+          THEN
+            MinDay <- Temperatures[HourCounter, DayCounter]
+        ENDIF
+    NEXT HourCounter
+
+    CASE OF DayCounter
+        0 : Day <- "Monday"
+        1 : Day <- "Tuesday"
+        2 : Day <- "Wednesday"
+        3 : Day <- "Thursday"
+        4 : Day <- "Friday"
+        5 : Day <- "Saturday"
+        6 : Day <- "Sunday"
+    ENDCASE
+
+    DayAverage <- DayTotal / Hours
+    OUTPUT Day
+    OUTPUT "Maximum temperature ", MaxDay
+    OUTPUT "Minimum temperature ", MinDay
+    OUTPUT "Average temperature ", DayAverage
+
+    IF MaxDay > MaxWeek
+      THEN
+        MaxWeek <- MaxDay
+    ENDIF
+    IF MinDay > MinWeek
+      THEN
+        MinWeek <- MinDay
+    ENDIF
+    WeekTotal <- WeekTotal + DayTotal
+
+NEXT DayCounter
+
+WeekAverage <- WeekTotal / Days
+OUTPUT "Maximum temperature for week ", MaxWeek
+OUTPUT "Minimum temperature for week ", MinWeek
+OUTPUT "Average temperature for Week ", WeekAverage
