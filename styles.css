@@ -25,7 +25,6 @@ body {
     top:-9px;
     width: 100%;
     height:670px;
-
     max-width: 1200px;
     border: 1.5px solid #c6d0d8;
     border-radius: 0px;
@@ -45,14 +44,12 @@ h1 {
     width: 50%;
     padding: 9px;
     position:relative;
-
     left:0px;
     top:0px;
     border: none;
     outline: none;
     font-size: 16px;
     font-family: 'Courier New', Courier, monospace;
-
 }
 
 .input-box {
@@ -64,8 +61,8 @@ h1 {
     height: 690px;
     left: -4px;
     font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
-  }
-  
+}
+
 .output-box {
     background-color: #f3f6f9;
     color: #2e3135;
@@ -76,7 +73,7 @@ h1 {
     width: 50%;
     font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
 }
-  
+
 .list {
     background-color: #0a69da;
     position:absolute;
@@ -151,4 +148,31 @@ h1 {
 
 .execute:hover {
     background-color: #1b8139;
+}
+
+.container > button {
+    margin: 5px;
+}
+
+.copyright {
+    text-align: center;
+    font-size: 0.8em;
+    color: #AAAAAA;
+    padding: 12px;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+.copyright a {
+    color: #AAAAAA;
+    text-decoration: none;
+}
+
+.copyright a:hover {
+    text-decoration: underline;
+}
+
+.copyright i {
+    margin-left: 5px;
 }
