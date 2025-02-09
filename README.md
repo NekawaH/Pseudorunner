@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en">
 <body>
 
@@ -10,8 +9,7 @@
     <li>Unzip the file</li>
     <li>Open <code>index.html</code> in a browser (e.g. Google Chrome)</li>
 </ol>
-
-<p>(Only files <code>index.html</code>, <code>styles.css</code>, and <code>interpreter.js</code> are necessary)</p>
+<img width="401" alt="Screenshot 2025-02-09 at 20 33 49" src="https://github.com/user-attachments/assets/403489dc-743e-4745-9ec8-fece1b67647e" />
 
 <h2>Supported Syntax:</h2>
 <h3><strong>OPERATORS</strong></h3>
@@ -112,6 +110,16 @@ ENDCASE</code></pre>
 <pre><code>DECLARE Count : INTEGER
 DECLARE Name : STRING
 DECLARE Finished : BOOLEAN
+</code></pre>
+
+<h3><strong>CONSTANT</strong></h3>
+<pre><code>CONSTANT &lt;identifier&gt; &lt;- &lt;value&gt;
+CONSTANT &lt;identifier&gt; = &lt;value&gt;
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>CONSTANT const &lt;- 114514
+OUTPUT const // 114514
+const &lt;- const + 1 // Error: Cannot change constant value
 </code></pre>
 
 <h3><strong>ARRAY</strong></h3>
