@@ -1,0 +1,44 @@
+DECLARE Values : ARRAY[1:100] OF INTEGER
+
+PROCEDURE QuickSort(BYVAL Left:INTEGER, Right:INTEGER)
+    IF Left < Right THEN
+        PivotPos <- Partition(Left, Right)
+        CALL QuickSort(Left, PivotPos - 1)
+        CALL QuickSort(PivotPos + 1, Right)
+    ENDIF
+ENDPROCEDURE
+
+FUNCTION Partition(Left:INTEGER, Right:INTEGER) RETURNS INT
+    Pivot <- Values[Right]
+    i <- Left - 1
+    FOR j <- Left TO Right - 1
+        IF Values[j] <= Pivot THEN
+            i <- i + 1
+
+            // Swap Values[i] and Values[j]
+            Temp <- Values[i]
+            Values[i] <- Values[j]
+            Values[j] <- Temp
+        ENDIF
+    NEXT j
+
+    // Place the pivot in its correct position
+    Temp <- Values[i + 1]
+    Values[i + 1] <- Values[Right]
+    Values[Right] <- Temp
+
+    RETURN i + 1
+ENDFUNCTION
+
+// Main program
+INPUT n
+FOR Index <- 1 TO n
+    INPUT Values[Index]
+NEXT Index
+
+CALL QuickSort(1, n)
+
+// Output the sorted array
+FOR Index <- 1 TO n
+    OUTPUT Values[Index]
+NEXT Index
