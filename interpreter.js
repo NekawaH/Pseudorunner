@@ -788,9 +788,7 @@ class PseudoInterpreter {
 
                 case "SET":
                     reference = this.parseReference(token[1]);
-                    console.log(token[2]);
                     val = this.evalExpression(token[2]);
-                    console.log(val);
                 
                     topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
                     
