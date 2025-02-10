@@ -110,12 +110,12 @@ class PseudoInterpreter {
         } else if (/^UNTIL\s+(.*)$/.test(line)) {
             const match = line.match(/^UNTIL\s+(.*)$/);
             return ["UNTIL", match[1]];
-        } else if (/^DECLARE\s+([\w\s,]+)\s+OF\s+(\w+)$/.test(line)) {
-            const match = line.match(/^DECLARE\s+([\w\s,]+)\s+OF\s+(\w+)$/);
+        } else if (/^DECLARE\s+([\w\s,]+)\s+(?:OF|:)\s+(\w+)$/.test(line)) {
+            const match = line.match(/^DECLARE\s+([\w\s,]+)\s+(?:OF|:)\s+(\w+)$/);
             if (match) {
-                const variables = match[1].split(',').map(v => v.trim());
-                const dataType = match[2];
-                return ["DECLAREVAR", variables, dataType];
+              const variables = match[1].split(',').map(v => v.trim());
+              const dataType = match[2];
+              return ["DECLAREVAR", variables, dataType];
             }
             return null; // Or handle the error case appropriately
         } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
@@ -261,6 +261,38 @@ class PseudoInterpreter {
     
         return expr;
     }
+
+    replaceArrays(expr) {
+        expr = String(expr);
+    
+        // Regular expression to match 1D and 2D array references, excluding those in quotes
+        const arrayPattern = /(?:'([^']*)'|"([^"]*)")|(\w+)\[([^\]]+?)(?:,\s*([^\]]+?))?\]/g;
+
+        // Function to replace array references with their evaluated values
+        const replaceArray = (match, singleQuoteContent, doubleQuoteContent, arrayName, index1, index2) => {
+            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
+                return match; // It's a quoted string, so return it as is
+            }
+
+            if (index2 !== undefined) { // 2D array reference
+                return this.evalArray(`${arrayName}[${this.evalExpression(index1)},${this.evalExpression(index2)}]`);
+            } else { // 1D array reference
+                return this.evalArray(`${arrayName}[${this.evalExpression(index1)}]`);
+            }
+        };
+
+        // Replace all array references in the expression
+        expr = expr.replace(arrayPattern, replaceArray);
+
+        return expr;
+    }
+
+    replaceReferences(expr) {
+        if (expr !== this.replaceVariables(expr)) return this.replaceVariables(expr);
+        if (expr !== this.replaceConstants(expr)) return this.replaceConstants(expr);
+        if (expr !== this.replaceArrays(expr)) return this.replaceArrays(expr);
+        return expr;
+    }
     
     transformArrayIndexes(expr) {
         const arrayIndexRegex = /(\w+)\[([^\]]+(?:,[^\]]+)?)\]/g; // Matches Array[i] or Table[i, j]
@@ -291,6 +323,9 @@ class PseudoInterpreter {
     }
     
     parseReference(expr) {
+        while (this.replaceReferences(expr) !== this.replaceReferences(this.replaceReferences(expr))) {
+            expr = this.replaceReferences(expr);
+        }
         const pattern1 = /^(.*)\[(.+?)\]$/;
         const pattern2 = /^(.*)\[(.+?),(.+?)\]$/;
         let match;
@@ -306,7 +341,7 @@ class PseudoInterpreter {
     }
 
     isReference(expr) {
-        return this.parseReference(expr).length > 1 || this.replaceVariables(expr) !== expr;
+        return this.parseReference(expr).length > 1 || this.replaceReferences(expr) !== expr;
     }
 
     evalArray(expr) {
@@ -400,6 +435,8 @@ class PseudoInterpreter {
         procParams.forEach(([paramName, paramType, paramValOrRef], index) => {
             if (paramValOrRef === "BYREF" && this.isReference(args[index])) {
                 storedArgs[paramName] = args[index];
+            } else if (paramName.startsWith('^')) {
+                storedArgs[paramName.substring(1)] = args[index];
             } else {
                 storedArgs[paramName] = this.evalExpression(args[index]);
             }
@@ -411,7 +448,9 @@ class PseudoInterpreter {
         
         procParams.forEach(([paramName, paramType, paramValOrRef], index) => {
             if (paramValOrRef === "BYREF" && this.isReference(args[index])) {
-                this.execute([["SET", args[index], this.tempArgs[this.tempArgs.length - 1][paramName]]]); // Return any altered argument values
+                this.execute([["SET", args[index], this.tempArgs[this.tempArgs.length - 1][paramName]]]);
+            } else if (paramName.startsWith('^')) {
+                this.execute([["SET", args[index], this.tempArgs[this.tempArgs.length - 1][paramName.substring(1)]]]);
             }
         });
 
@@ -440,34 +479,15 @@ class PseudoInterpreter {
             return expr;
         }
 
-        // Replace variables and constants in the expression with their values
-        while (expr !== this.replaceVariables(expr)) {
-            expr = this.replaceVariables(expr);
-        }
-        console.log(expr);
-        console.log(this.replaceConstants(expr));
-        while (expr !== this.replaceConstants(expr)) {
-            expr = this.replaceConstants(expr);
+        // Handle references
+        if (expr.startsWith('^')) {
+            return expr.substring(1);
         }
 
-        // Regular expression to match 1D and 2D array references, excluding those in quotes
-        const arrayPattern = /(?:'([^']*)'|"([^"]*)")|(\w+)\[([^\]]+?)(?:,\s*([^\]]+?))?\]/g;
-
-        // Function to replace array references with their evaluated values
-        const replaceArrayReferences = (match, singleQuoteContent, doubleQuoteContent, arrayName, index1, index2) => {
-            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
-                return match; // It's a quoted string, so return it as is
-            }
-
-            if (index2 !== undefined) { // 2D array reference
-                return this.evalArray(`${arrayName}[${this.evalExpression(index1)},${this.evalExpression(index2)}]`);
-            } else { // 1D array reference
-                return this.evalArray(`${arrayName}[${this.evalExpression(index1)}]`);
-            }
-        };
-
-        // Replace all array references in the expression
-        expr = expr.replace(arrayPattern, replaceArrayReferences);
+        // Replace variables, constants and array references in the expression with their values
+        while (expr !== this.replaceReferences(expr)) {
+            expr = this.replaceReferences(expr);
+        }
 
         // Detect user-defined function calls using regex (e.g., myFunc(arg1, arg2)), excluding those in quotes
         const userFuncRegex = /(?:'([^']*)'|"([^"]*)")|([A-Za-z_]\w*)\(([^()]*)\)/g;
@@ -609,7 +629,8 @@ class PseudoInterpreter {
         try {
             return eval(expr); // Evaluate mathematical and logical expressions
         } catch {
-            throw new Error(`Invalid expression: ${expr}`);
+            return expr;
+            // throw new Error(`Invalid expression: ${expr}`);
         }
     }
 
@@ -771,7 +792,7 @@ class PseudoInterpreter {
                     val = this.evalExpression(token[2]);
                 
                     topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
-
+                    
                     if (reference.length === 1) {
                         if (topArgs && reference[0] in topArgs) {
                             topArgs[reference[0]] = val;
@@ -817,9 +838,6 @@ class PseudoInterpreter {
         
                 case "INPUT":
                     const inputVal = prompt(`Enter value for ${this.transformArrayIndexes(token[1])}:`);
-                    reference = this.parseReference(token[1]);
-                    topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
-
                     if (this.isValidStringExpression(inputVal)) {
                         val = inputVal;
                     } else if (!isNaN(inputVal) && !isNaN(Number(inputVal))) {
@@ -834,22 +852,7 @@ class PseudoInterpreter {
                             val = `"${inputVal}"`;
                         }
                     }
-                
-                    if (reference.length === 1) {
-                        if (topArgs && reference[0] in topArgs) {
-                            topArgs[reference[0]] = val;
-                        } else {
-                            if (this.constants[reference[0]] === undefined) {
-                                this.variables[reference[0]] = val;
-                            } else {
-                                throw new SyntaxError(`Cannot overwrite constant: ${reference[0]}`);
-                            }
-                        }
-                    } else if (reference.length === 2) {
-                        this.arrays[reference[0]][reference[1]] = val;
-                    } else if (reference.length === 3) {
-                        this.arrays[reference[0]][reference[1]][reference[2]] = val;
-                    }
+                    this.execute([["SET", token[1], val]]);
                     break;
 
                 case "IF":
