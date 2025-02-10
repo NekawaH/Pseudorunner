@@ -1,3 +1,9 @@
+PROCEDURE SwapValue(BYREF x : REAL, y : REAL)
+    temp <- x
+    x <- y
+    y <- temp
+ENDPROCEDURE
+
 DECLARE Values : ARRAY[1:100] OF INTEGER
 INPUT n
 FOR Index <- 1 TO n
@@ -8,9 +14,7 @@ REPEAT
     Swap <- FALSE
         FOR Index <- 1 TO Last-1
             IF Values[Index] > Values[Index+1] THEN
-                Temp <- Values[Index]
-                Values[Index] <- Values[Index+1]
-                Values[Index+1] <- Temp
+                CALL SwapValue(Values[Index], Values[Index+1])
                 Swap <- TRUE
             ENDIF
         NEXT Index
