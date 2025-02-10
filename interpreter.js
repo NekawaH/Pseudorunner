@@ -110,9 +110,14 @@ class PseudoInterpreter {
         } else if (/^UNTIL\s+(.*)$/.test(line)) {
             const match = line.match(/^UNTIL\s+(.*)$/);
             return ["UNTIL", match[1]];
-        } else if (/^DECLARE\s+(\w+)\s*:\s*(\w+)$/.test(line)) {
-            const match = line.match(/^DECLARE\s+(\w+)\s*:\s*(\w+)$/);
-            return ["DECLAREVAR", match[1], match[2]];
+        } else if (/^DECLARE\s+([\w\s,]+)\s+OF\s+(\w+)$/.test(line)) {
+            const match = line.match(/^DECLARE\s+([\w\s,]+)\s+OF\s+(\w+)$/);
+            if (match) {
+                const variables = match[1].split(',').map(v => v.trim());
+                const dataType = match[2];
+                return ["DECLAREVAR", variables, dataType];
+            }
+            return null; // Or handle the error case appropriately
         } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
             const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
             return ["DECLAREARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], match[4]];
@@ -393,7 +398,7 @@ class PseudoInterpreter {
 
         let storedArgs = {};
         procParams.forEach(([paramName, paramType, paramValOrRef], index) => {
-            if (this.isReference(args[index])) {
+            if (paramValOrRef === "BYREF" && this.isReference(args[index])) {
                 storedArgs[paramName] = args[index];
             } else {
                 storedArgs[paramName] = this.evalExpression(args[index]);
@@ -406,7 +411,7 @@ class PseudoInterpreter {
         
         procParams.forEach(([paramName, paramType, paramValOrRef], index) => {
             if (paramValOrRef === "BYREF" && this.isReference(args[index])) {
-                this.execute([["SET",args[index],this.tempArgs[this.tempArgs.length - 1][paramName]]]); // Return any altered argument values
+                this.execute([["SET", args[index], this.tempArgs[this.tempArgs.length - 1][paramName]]]); // Return any altered argument values
             }
         });
 
@@ -502,7 +507,7 @@ class PseudoInterpreter {
         expr = expr.replace(/NOT/g, '!');                                   // Not
         expr = expr.replace(/TRUE/g, 'true');                               // True
         expr = expr.replace(/FALSE/g, 'false');                             // False
-        expr = expr.replace(/\^/g, '**');                                   // Exponentiation
+        // expr = expr.replace(/\^/g, '**');                                // Exponentiation
         expr = expr.replace(/MOD/g, '%');                                   // Remainder
         expr = expr.replace(/(\w+)\s+DIV\s+(\w+)/g, 'Math.floor($1 / $2)'); // Floor division
         expr = expr.replace(/(^|[^=!<>])=([^=]|$)/g, '$1==$2');             // Equal to
@@ -763,24 +768,24 @@ class PseudoInterpreter {
 
                 case "SET":
                     reference = this.parseReference(token[1]);
-                    let result = this.evalExpression(token[2]);
+                    val = this.evalExpression(token[2]);
                 
                     topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
 
                     if (reference.length === 1) {
                         if (topArgs && reference[0] in topArgs) {
-                            topArgs[reference[0]] = result;
+                            topArgs[reference[0]] = val;
                         } else {
                             if (this.constants[reference[0]] === undefined) {
-                                this.variables[reference[0]] = result;
+                                this.variables[reference[0]] = val;
                             } else {
                                 throw new SyntaxError(`Cannot overwrite constant: ${reference[0]}`);
                             }
                         }
                     } else if (reference.length === 2) {
-                        this.arrays[reference[0]][reference[1]] = result;
+                        this.arrays[reference[0]][reference[1]] = val;
                     } else if (reference.length === 3) {
-                        this.arrays[reference[0]][reference[1]][reference[2]] = result;
+                        this.arrays[reference[0]][reference[1]][reference[2]] = val;
                     }
                     break;
 
@@ -835,7 +840,7 @@ class PseudoInterpreter {
                             topArgs[reference[0]] = val;
                         } else {
                             if (this.constants[reference[0]] === undefined) {
-                                this.variables[reference[0]] = result;
+                                this.variables[reference[0]] = val;
                             } else {
                                 throw new SyntaxError(`Cannot overwrite constant: ${reference[0]}`);
                             }
@@ -1183,7 +1188,14 @@ class PseudoInterpreter {
 
                 case "DECLAREVAR":
                     initialValue = this.findInitialValue(token[2]);
-                    this.variables[token[1]] = initialValue;
+                    if (Array.isArray(token[1])) {
+                        token[1].forEach(varName => {
+                            this.variables[varName] = initialValue;
+                        });
+                    } else {
+                        // Handle the case where token[1] is not an array (e.g., a single variable)
+                        this.variables[token[1]] = initialValue;
+                    }
                     break;
 
                 case "DECLAREARRAY":
