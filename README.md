@@ -134,7 +134,21 @@ DECLARE &lt;identifier&gt;:ARRAY[&lt;lower1&gt;:&lt;upper1&gt;,&lt;lower2&gt;:&l
 DECLARE NoughtsAndCrosses : ARRAY[1:3,1:3] OF CHAR
 StudentNames[1] &lt;- "Ali"
 NoughtsAndCrosses[2,3] &lt;- 'X'
+n &lt;- 1
 StudentNames[n+1] &lt;- StudentNames[n]</code></pre>
+
+<h3><strong>REFERENCE</strong></h3>
+<pre><code>^&lt;identifier&gt;</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>Ref &lt;- ^Val
+Val &lt;- 114
+OUTPUT Ref // 114
+Val &lt;- 514
+OUTPUT Ref // 514
+Ref &lt;- 1919
+OUTPUT Ref // 1919
+OUTPUT Val // 1919
+</code></pre>
 
 <h3><strong>STRING</strong></h3>
 <pre><code>LEFT(&lt;string&gt;,&lt;length&gt;)
@@ -145,19 +159,19 @@ UCASE(&lt;string&gt;)
 LCASE(&lt;string&gt;)
 </code></pre>
 <p><strong>Example:</strong></p>
-<pre><code>LEFT("ABCDEFGH",3) // Returns "ABC"
-RIGHT("ABCDEFGH",3) // Returns "FGH"
-MID("ABCDEFGH",2,3) // Returns "BCD"
-LENGTH("HELLO world") // Returns 11
-UCASE("HELLO world") // Returns "HELLO WORLD"
-LCASE("HELLO world") // Returns "hello world"
+<pre><code>OUTPUT LEFT("ABCDEFGH",3) // "ABC"
+OUTPUT RIGHT("ABCDEFGH",3) // "FGH"
+OUTPUT MID("ABCDEFGH",2,3) // "BCD"
+OUTPUT LENGTH("HELLO world") // 11
+OUTPUT UCASE("HELLO world") // "HELLO WORLD"
+OUTPUT LCASE("HELLO world") // "hello world"
 </code></pre>
 
 <h3><strong>RANDOM</strong></h3>
 <pre><code>RAND(&lt;number&gt;)
 </code></pre>
 <p><strong>Example:</strong></p>
-<pre><code>RAND(85) // Returns a real number between &#91;0,85)
+<pre><code>OUTPUT RAND(85) // a real number between [0,85)
 </code></pre>
 
 <h3><strong>FUNCTION</strong></h3>
@@ -171,8 +185,7 @@ ENDFUNCTION
 <pre><code>FUNCTION add(x : REAL, y : REAL) RETURNS REAL
     RETURN x + y
 ENDFUNCTION
-// Outputs 3
-OUTPUT add(1,2)</code></pre>
+OUTPUT add(1,2) // 3</code></pre>
 
 <h3><strong>PROCEDURE</strong></h3>
 <pre><code>PROCEDURE &lt;identifier&gt;(&lt;BYVAL/BYREF&gt; &lt;param&gt; : &lt;data type&gt; ...)
@@ -182,7 +195,7 @@ ENDPROCEDURE
 CALL &lt;identifier&gt;(&lt;params&gt;)
 </code></pre>
 <p><strong>Example:</strong></p>
-<pre><code>PROCEDURE swap(BYREF x : REAL, y : REAL)
+<pre><code>PROCEDURE swap(BYREF x : REAL, y : REAL) // Also support using reference sign: PROCEDURE swap(^x : REAL, ^y : REAL)
     temp &lt;- x
     x &lt;- y
     y &lt;- temp
@@ -190,7 +203,7 @@ ENDPROCEDURE
 a &lt;- 1
 b &lt;- 2
 CALL swap(a,b)
-OUTPUT a, " ", b // Outputs 2 1</code></pre>
+OUTPUT a, " ", b // 2 1</code></pre>
 
 <h3><strong>FILE HANDLING</strong></h3>
 <pre><code>OPENFILE &lt;file identifier&gt; FOR &lt;file mode&gt;
