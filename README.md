@@ -17,7 +17,7 @@
 a - b     // Subtraction
 a * b     // Multiplication
 a / b     // Division
-a ^ b     // Power
+a ** b    // Power
 a DIV b   // Floor Division
 a MOD b   // Remainder
 a == b    // Equal
