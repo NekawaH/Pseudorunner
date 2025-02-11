@@ -1,5 +1,11 @@
 DECLARE Values : ARRAY[1:100] OF INTEGER
 
+PROCEDURE SwapValue(BYREF x : REAL, y : REAL)
+    temp <- x
+    x <- y
+    y <- temp
+ENDPROCEDURE
+
 PROCEDURE QuickSort(BYVAL Left:INTEGER, Right:INTEGER)
     IF Left < Right THEN
         PivotPos <- Partition(Left, Right)
@@ -14,23 +20,15 @@ FUNCTION Partition(Left:INTEGER, Right:INTEGER) RETURNS INT
     FOR j <- Left TO Right - 1
         IF Values[j] <= Pivot THEN
             i <- i + 1
-
-            // Swap Values[i] and Values[j]
-            Temp <- Values[i]
-            Values[i] <- Values[j]
-            Values[j] <- Temp
+            CALL SwapValue(Values[i], Values[j])
         ENDIF
     NEXT j
-
-    // Place the pivot in its correct position
     Temp <- Values[i + 1]
     Values[i + 1] <- Values[Right]
     Values[Right] <- Temp
-
     RETURN i + 1
 ENDFUNCTION
 
-// Main program
 INPUT n
 FOR Index <- 1 TO n
     INPUT Values[Index]
@@ -38,7 +36,6 @@ NEXT Index
 
 CALL QuickSort(1, n)
 
-// Output the sorted array
 FOR Index <- 1 TO n
     OUTPUT Values[Index]
 NEXT Index
