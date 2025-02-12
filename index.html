@@ -39,6 +39,7 @@ UNTIL NOT Swap OR Last==1
 FOR Index <- 1 TO n
     OUTPUT Values[Index]
 NEXT Index">Bubble Sort</a></li>
+
         <li><a class="payload" href="#" data-copy="DECLARE Values : ARRAY[1:100] OF INTEGER
 INPUT n
 FOR Index <- 1 TO n
@@ -57,6 +58,7 @@ UNTIL Index==n OR flag
 IF flag==FALSE THEN
     OUTPUT &quot;Not found&quot;
 ENDIF">Linear Search</a></li>
+
         <li><a class="payload" href="#" data-copy="INPUT n
 
 FUNCTION F(X:INTEGER) RETURNS INTEGER
@@ -68,6 +70,7 @@ FUNCTION F(X:INTEGER) RETURNS INTEGER
 ENDFUNCTION
 
 OUTPUT F(n)">Factorial</a></li>
+
         <li><a class="payload" href="#" data-copy="DECLARE Number : ARRAY[1:100] OF INTEGER
 INPUT n
 FOR Index <- 1 TO n
@@ -82,6 +85,26 @@ NEXT Count
 Average <- Total/n
 OUTPUT Total
 OUTPUT Average">Sum and Average</a></li>
+
+        <li><a class="payload" href="#" data-copy="POPUP TRUE
+DECLARE City : ARRAY[1:100, 1:2] OF STRING
+DECLARE Count : INTEGER
+DECLARE Out : INTEGER
+Count <- 1
+N <- 5
+
+REPEAT
+    OUTPUT &quot;Enter the name of the city&quot;
+    INPUT City[Count, 1]
+    OUTPUT &quot;Enter the name of the country&quot;
+    INPUT City[Count, 2]
+    Count <- Count + 1
+UNTIL Count > N
+
+FOR Out <- 1 TO N
+    OUTPUT &quot;The city &quot;, City[Out, 1], &quot; is in &quot;, City[Out, 2]
+NEXT Out">Cities and Countries</a></li>
+
     </ul>
 </div>
 
