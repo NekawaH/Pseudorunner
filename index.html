@@ -105,6 +105,27 @@ FOR Out <- 1 TO N
     OUTPUT &quot;The city &quot;, City[Out, 1], &quot; is in &quot;, City[Out, 2]
 NEXT Out">Cities and Countries</a></li>
 
+        <li><a class="payload" href="#" data-copy="PROCEDURE PrintFile(file:STRING)
+OPENFILE file FOR READ
+WHILE NOT EOF(file) DO
+    READFILE file, Line
+    OUTPUT Line
+ENDWHILE
+CLOSEFILE file
+ENDPROCEDURE
+
+OPENFILE &quot;File.txt&quot; FOR WRITE
+WRITEFILE &quot;File.txt&quot;, &quot;hello world&quot;
+WRITEFILE &quot;File.txt&quot;, &quot;lets learn pseudocode&quot;
+CLOSEFILE &quot;File.txt&quot;
+
+OPENFILE &quot;File.txt&quot; FOR APPEND
+WRITEFILE &quot;File.txt&quot;, &quot;new line&quot;
+WRITEFILE &quot;File.txt&quot;, &quot;another line&quot;
+CLOSEFILE &quot;File.txt&quot;
+
+CALL PrintFile(&quot;File.txt&quot;)">File Handling</a></li>
+
     </ul>
 </div>
 
