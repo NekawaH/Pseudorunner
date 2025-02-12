@@ -11,14 +11,81 @@
 <body>
 
 <div class="menu-container">
-    <button id="clicker" onclick="cl()" class="menu-toggle">Menu</button>
+    <button id="clicker" onclick="cl()" class="menu-toggle">Example Code</button>
     <ul id="mi" class="menu-items">
-        <li><a class="payload" href="#">placeholder</a></li>
-        <li><a class="payload" href="#">placeholder</a></li>
+        <li><a class="payload" href="#" data-copy="DECLARE Values : ARRAY[1:100] OF INTEGER
+
+PROCEDURE SwapValue(BYREF x : REAL, y : REAL)
+    temp <- x
+    x <- y
+    y <- temp
+ENDPROCEDURE
+
+INPUT n
+FOR Index <- 1 TO n
+    INPUT Values[Index]
+NEXT Index
+Last <- n
+REPEAT
+    Swap <- FALSE
+        FOR Index <- 1 TO Last-1
+            IF Values[Index] > Values[Index+1] THEN
+                CALL SwapValue(Values[Index], Values[Index+1])
+                Swap <- TRUE
+            ENDIF
+        NEXT Index
+        Last <- Last-1
+UNTIL NOT Swap OR Last==1
+FOR Index <- 1 TO n
+    OUTPUT Values[Index]
+NEXT Index">Bubble Sort</a></li>
+        <li><a class="payload" href="#" data-copy="DECLARE Values : ARRAY[1:100] OF INTEGER
+INPUT n
+FOR Index <- 1 TO n
+    INPUT Values[Index]
+NEXT Index
+INPUT x
+flag <- FALSE
+Index <- 0
+REPEAT
+    Index <- Index+1
+    IF Values[Index]==x THEN
+        OUTPUT &quot;Position: &quot;, Index
+        flag <- TRUE
+    ENDIF
+UNTIL Index==n OR flag
+IF flag==FALSE THEN
+    OUTPUT &quot;Not found&quot;
+ENDIF">Linear Search</a></li>
+        <li><a class="payload" href="#" data-copy="INPUT n
+
+FUNCTION F(X:INTEGER) RETURNS INTEGER
+    IF X = 0 THEN
+        RETURN 1
+    ELSE
+        RETURN X * F(X-1)
+    ENDIF
+ENDFUNCTION
+
+OUTPUT F(n)">Factorial</a></li>
+        <li><a class="payload" href="#" data-copy="DECLARE Number : ARRAY[1:100] OF INTEGER
+INPUT n
+FOR Index <- 1 TO n
+    INPUT Number[Index]
+NEXT Index
+
+Total <- 0
+FOR Count <- 1 TO n
+    Total <- Total+Number[Count]
+NEXT Count
+
+Average <- Total/n
+OUTPUT Total
+OUTPUT Average">Sum and Average</a></li>
     </ul>
 </div>
 
-<div class="main-container">
+<div id = "main-container" class="main-container">
     <div class="container">
         <h1>Pseudocode Interpreter</h1>
         <div class="textboxes">
@@ -38,8 +105,9 @@
     </div>
 </div>
 
-<script src="interpreter.js"></script>
+<script src="clipboard.js"></script>
 <script src="indentation.js"></script>
+<script src="interpreter.js"></script>
 <script src="list.js"></script>
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
