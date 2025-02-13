@@ -13,6 +13,8 @@ class PseudoInterpreter {
         this.inMultilineComment = false;
         this.globalReturnValue = null;
         this.tempArgs = [];
+        this.types = {};
+        this.declareTypeName = null;
         this.popup = false;
     }
 
@@ -193,6 +195,11 @@ class PseudoInterpreter {
         } else if (/^RETURN\s+(.*)$/.test(line)) {
             const match = line.match(/^RETURN\s+(.*)$/);
             return ["RETURN", match[1]];
+        } else  if (line.startsWith("TYPE")) {
+            const match = line.match(/^TYPE\s+(.*)$/);
+            return ["TYPEDEF", match[1]];
+        } else if (line === "ENDTYPE") {
+            return ["ENDTYPE"];
         } else if (/^OPENFILE\s+(.*?)\s+FOR\s+(.*)$/.test(line)) {
             const match = line.match(/^OPENFILE\s+(.*?)\s+FOR\s+(.*)$/);
             return ["OPENFILE", match[1], match[2]];
@@ -222,7 +229,22 @@ class PseudoInterpreter {
         if (expr === "BOOLEAN" || expr === "BOOL") {
             return false;
         }
+        if (this.types[expr] !== undefined) {
+            return this.types[expr];
+        }
         return null;
+    }
+
+    replaceAttributes(expr) {
+        expr = String(expr);
+    
+        const regex = /(\w+)\.(\w+)/g;
+
+        expr = expr.replace(regex, (match, object, attribute) => {
+            return attribute === "txt" || !isNaN(object) && !isNaN(Number(attribute)) ? object + "." + attribute : this.variables[object][attribute];
+        });
+
+        return expr;
     }
 
     replaceVariables(expr) {
@@ -288,6 +310,7 @@ class PseudoInterpreter {
     }
 
     replaceReferences(expr) {
+        if (expr !== this.replaceAttributes(expr)) return this.replaceAttributes(expr);
         if (expr !== this.replaceVariables(expr)) return this.replaceVariables(expr);
         if (expr !== this.replaceConstants(expr)) return this.replaceConstants(expr);
         if (expr !== this.replaceArrays(expr)) return this.replaceArrays(expr);
@@ -328,13 +351,17 @@ class PseudoInterpreter {
         }
         const pattern1 = /^(.*)\[(.+?)\]$/;
         const pattern2 = /^(.*)\[(.+?),(.+?)\]$/;
+        const pattern3 = /(\w+)\.(\w+)/;
         let match;
-        if (pattern2.test(expr)) { // 2D array
-            match = expr.match(pattern2);
-            return [match[1],this.evalExpression(match[2]),this.evalExpression(match[3])]
+        if (pattern3.test(expr)) { // Object attribute
+            match = expr.match(pattern3);
+            return ["OBJECTATTRIBUTE", match[1], match[2]]
+        } else if (pattern2.test(expr)) { // 2D array
+            match = expr.match(pattern2)
+            return ["2DARRAY", match[1], this.evalExpression(match[2]), this.evalExpression(match[3])]
         } else if (pattern1.test(expr)) { // 1D array
             match = expr.match(pattern1);
-            return [match[1],this.evalExpression(match[2])]
+            return ["1DARRAY", match[1], this.evalExpression(match[2])]
         } else {
             return [expr];
         }
@@ -764,10 +791,13 @@ class PseudoInterpreter {
         let forCount;
         let ifCount;
         let currentBlock;
+        let funcName;
+        let returnType;
         let procName;
         let defParams;
         let topArgs;
         let initialValue;
+        let typeName;
         let file;
         let fileLine;
         let fileLines;
@@ -798,14 +828,15 @@ class PseudoInterpreter {
                         } else {
                             if (this.constants[reference[0]] === undefined) {
                                 this.variables[reference[0]] = val;
-                            } else {
-                                throw new SyntaxError(`Cannot overwrite constant: ${reference[0]}`);
-                            }
+                            } else throw new SyntaxError(`Cannot overwrite constant: ${reference[0]}`);
                         }
-                    } else if (reference.length === 2) {
-                        this.arrays[reference[0]][reference[1]] = val;
-                    } else if (reference.length === 3) {
-                        this.arrays[reference[0]][reference[1]][reference[2]] = val;
+                    } else if (reference[0] === "1DARRAY") {
+                        this.arrays[reference[1]][reference[2]] = val;
+                    } else if (reference[0] === "2DARRAY") {
+                        this.arrays[reference[1]][reference[2]][reference[3]] = val;
+                    } else if (reference[0] === "OBJECTATTRIBUTE") {
+                        if (this.variables[reference[1]][reference[2]] === undefined) throw new SyntaxError(`Undefined attribute: ${reference[2]}`);
+                        this.variables[reference[1]][reference[2]] = val;
                     }
                     break;
 
@@ -1190,33 +1221,59 @@ class PseudoInterpreter {
 
                 case "DECLAREVAR":
                     initialValue = this.findInitialValue(token[2]);
-                    if (Array.isArray(token[1])) {
-                        token[1].forEach(varName => {
-                            this.variables[varName] = initialValue;
-                        });
+                    if (this.declareTypeName === null) {
+                        if (Array.isArray(token[1])) {
+                            token[1].forEach(varName => {
+                                this.variables[varName] = initialValue;
+                            });
+                        } else {
+                            // Handle the case where token[1] is not an array (e.g., a single variable)
+                            this.variables[token[1]] = initialValue;
+                        }
                     } else {
-                        // Handle the case where token[1] is not an array (e.g., a single variable)
-                        this.variables[token[1]] = initialValue;
+                        if (Array.isArray(token[1])) {
+                            token[1].forEach(varName => {
+                                this.types[this.declareTypeName][varName] = initialValue;
+                            });
+                        } else {
+                            // Handle the case where token[1] is not an array (e.g., a single variable)
+                            this.types[this.declareTypeName][token[1]] = initialValue;
+                        }
                     }
                     break;
 
                 case "DECLAREARRAY":
                     initialValue = this.findInitialValue(token[3]);
-                    this.arrays[token[1]] = Array(token[2][1] + 1);
-                    this.arrays[token[1]].fill(initialValue);
+                    if (this.declareTypeName === null) {
+                        this.arrays[token[1]] = Array(token[2][1] + 1);
+                        this.arrays[token[1]].fill(initialValue);
+                    } else {
+                        this.types[this.declareTypeName][token[1]] = Array(token[2][1] + 1);
+                        this.types[this.declareTypeName][token[1]].fill(initialValue);
+                    }
                     break;
                 
                 case "DECLARE2DARRAY":
                     initialValue = this.findInitialValue(token[4]);
-                    this.arrays[token[1]] = Array(token[2][1] + 1);
-                    for (let i = 0; i < token[2][1] + 1; i++) {
-                        this.arrays[token[1]][i] = Array(token[3][1] + 1);
-                        this.arrays[token[1]][i].fill(initialValue);
+                    if (this.declareTypeName === null) {
+                        this.arrays[token[1]] = Array(token[2][1] + 1);
+                        for (let i = 0; i < token[2][1] + 1; i++) {
+                            this.arrays[token[1]][i] = Array(token[3][1] + 1);
+                            this.arrays[token[1]][i].fill(initialValue);
+                        }
+                    } else {
+                        this.types[this.declareTypeName][token[1]] = Array(token[2][1] + 1);
+                        for (let i = 0; i < token[2][1] + 1; i++) {
+                            this.types[this.declareTypeName][token[1]][i] = Array(token[3][1] + 1);
+                            this.types[this.declareTypeName][token[1]][i].fill(initialValue);
+                        }
                     }
                     break;
                 
                 case "FUNCTIONDEF":
-                    const [_, funcName, params, returnType] = token;
+                    funcName = token[1];
+                    defParams = token[2];
+                    returnType = token[3];
                     
                     // Collect all lines until "ENDFUNCTION" as the function body
                     const funcBody = [];
@@ -1228,7 +1285,7 @@ class PseudoInterpreter {
                 
                     // Store function definition in functions object
                     this.functions[funcName] = {
-                        defParams: params,       // Array of [paramName, paramType]
+                        defParams: defParams,       // Array of [paramName, paramType]
                         returnType: returnType,
                         funcBody: funcBody,
                     };
@@ -1264,9 +1321,21 @@ class PseudoInterpreter {
                 case "CALLPROCEDURE":
                     procName = token[1];
                     const args = token[2];
-                
                     this.callProcedure(procName, args);
+                    break;
 
+                case "TYPEDEF":
+                    typeName = token[1];
+                    this.declareTypeName = typeName;
+                    this.types[typeName] = {};
+                    while (parsedCode[i][0] !== "ENDTYPE") {
+                        i++;
+                        if (parsedCode[i][0].startsWith("DECLARE")) this.execute([parsedCode[i]]);
+                    }
+                    this.declareTypeName = null;
+                    break;
+
+                case "ENDTYPE":
                     break;
 
                 case "OPENFILE":
