@@ -82,7 +82,7 @@ class PseudoInterpreter {
         } else if ((/^WHILE (.*?)(?: DO)?$/).test(line)) {
             const match = line.match(/^WHILE (.*?)(?: DO)?$/);
             return ["WHILE", match[1]];
-        } else if (line.startsWith("DO")) {
+        } else if (line === "DO") {
             return ["DO"];
         } else if (line === "ENDWHILE") {
             return ["ENDWHILE"];
@@ -212,6 +212,9 @@ class PseudoInterpreter {
         } else if (/^CLOSEFILE\s+(.*)$/.test(line)) {
             const match = line.match(/^CLOSEFILE\s+(.*)$/);
             return ["CLOSEFILE", match[1]];
+        } else if (/^DOWNLOAD\s+(.*)$/.test(line)) {
+            const match = line.match(/^DOWNLOAD\s+(.*)$/);
+            return ["DOWNLOAD", match[1]];
         }
 
        throw new SyntaxError(`Unknown command: ${line}`);
@@ -1339,6 +1342,20 @@ class PseudoInterpreter {
                 case "CLOSEFILE":
                     fileName = this.removeQuotes(this.evalExpression(token[1]));
                     this.files[fileName][0] = 0;
+                    break;
+
+                case "DOWNLOAD":
+                    fileName = this.removeQuotes(this.evalExpression(token[1]));
+                    let text = this.files[fileName][1];
+                    const blob = new Blob([text], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
                     break;
 
                 default:
