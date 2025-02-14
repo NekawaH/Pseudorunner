@@ -332,9 +332,9 @@ class PseudoInterpreter {
             const evaluatedIndex = this.evalExpression(trimmedIndex);
 
             if (evaluatedIndex !== null && evaluatedIndex !== undefined) {
-            return evaluatedIndex;
+                return evaluatedIndex;
             } else {
-            return trimmedIndex; // Keep the original if evaluation fails
+                return trimmedIndex; // Keep the original if evaluation fails
             }
         });
 
@@ -396,15 +396,9 @@ class PseudoInterpreter {
     }
       
     turnBooleanCapitalized(expr) {
-        if (typeof expr === "boolean") {
-            return expr ? "TRUE" : "FALSE"
-        }
-        if (expr === "true") {
-            return "TRUE";
-        }
-        if (expr === "false") {
-            return "FALSE";
-        }
+        if (typeof expr === "boolean") return expr ? "TRUE" : "FALSE"
+        if (expr === "true") return "TRUE";
+        if (expr === "false")  return "FALSE";
         return expr;
     }
 
@@ -496,25 +490,14 @@ class PseudoInterpreter {
     evalExpression(expr) {
         expr = String(expr);
 
-        // Handle strings
-        if (this.isValidStringExpression(expr)) {
-            return expr;
-        }
-
-        // Handle file names
-        if (expr.endsWith('.txt')) {
-            return expr;
-        }
+        // Handle strings and file names
+        if (this.isValidStringExpression(expr) || expr.endsWith('.txt')) return expr;
 
         // Handle references
-        if (expr.startsWith('^')) {
-            return expr.substring(1);
-        }
+        if (expr.startsWith('^')) return expr.substring(1);
 
         // Replace variables, constants and array references in the expression with their values
-        while (expr !== this.replaceReferences(expr)) {
-            expr = this.replaceReferences(expr);
-        }
+        while (expr !== this.replaceReferences(expr))  expr = this.replaceReferences(expr);
 
         // Detect user-defined function calls using regex (e.g., myFunc(arg1, arg2)), excluding those in quotes
         const userFuncRegex = /(?:'([^']*)'|"([^"]*)")|([A-Za-z_]\w*)\(([^()]*)\)/g;
@@ -527,9 +510,7 @@ class PseudoInterpreter {
             const funcName = match[3];   // e.g., "myFunc"
             const argString = match[4];  // e.g., "a + 1, b"
 
-            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
-                continue; // It's a quoted string, skip it
-            }
+            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) continue;
 
             if (this.functions[funcName]) {
                 // Split arguments by comma and evaluate each
@@ -649,12 +630,12 @@ class PseudoInterpreter {
         }
 
         // Handle strings
-        if (this.isValidStringExpression(expr)) {
-            return expr;
-        }
+        if (this.isValidStringExpression(expr)) return expr;
 
         try {
-            return eval(expr); // Evaluate mathematical and logical expressions
+            expr = eval(expr);
+            if (!isNaN(expr) && !isNaN(Number(expr)) || expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') return expr;
+            else return `"${expr}"`;
         } catch {
             throw new Error(`Invalid expression: ${expr}`);
         }
@@ -678,14 +659,10 @@ class PseudoInterpreter {
             if (this.inMultilineComment || !line) continue;
     
             // Remove inline comments
-            if (line.includes("//")) {
-                line = line.split("//")[0].trim();
-            }
+            if (line.includes("//")) line = line.split("//")[0].trim();
             
             // Remove inline comments with #
-            if (line.includes("#")) {
-                line = line.split("#")[0].trim();
-            }
+            if (line.includes("#"))  line = line.split("#")[0].trim();
 
             if (line === "") continue;
 
@@ -1019,12 +996,7 @@ class PseudoInterpreter {
                     while (this.evalExpression(loopCondition)) {
                         for (const currentBlock of loopBody) {
                             this.execute(currentBlock);
-                            if (this.continueFlag) {
-                                break;
-                            }
-                            if (this.breakFlag) {
-                                break;
-                            }
+                            if (this.continueFlag || this.breakFlag) break;
                         }
                         if (this.continueFlag) {
                             this.continueFlag = false;
@@ -1103,12 +1075,7 @@ class PseudoInterpreter {
                     do {
                         for (const currentBlock of repeatBody) {
                             this.execute(currentBlock);
-                            if (this.continueFlag) {
-                                break;
-                            }
-                            if (this.breakFlag) {
-                                break;
-                            }
+                            if (this.continueFlag || this.breakFlag) break;
                         }
                         if (this.continueFlag) {
                             this.continueFlag = false;
@@ -1190,12 +1157,7 @@ class PseudoInterpreter {
                         this.variables[iteratorName] = forIterator;
                         for (const currentBlock of forBody) {
                             this.execute(currentBlock);
-                            if (this.continueFlag) {
-                                break;
-                            }
-                            if (this.breakFlag) {
-                                break;
-                            }
+                            if (this.continueFlag || this.breakFlag) break;
                         }
                         if (this.continueFlag) {
                             this.continueFlag = false;
