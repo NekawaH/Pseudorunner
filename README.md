@@ -10,6 +10,7 @@
     <li>Open <code>index.html</code> in a browser (e.g. Google Chrome)</li>
 </ol>
 <img width="401" alt="Screenshot 2025-02-09 at 20 33 49" src="https://github.com/user-attachments/assets/403489dc-743e-4745-9ec8-fece1b67647e" />
+<p>Alternatively, go to Github Pages: https://nekawah.github.io/Pseudorunner/</p>
 
 <h2>Supported Syntax:</h2>
 <h3><strong>OPERATORS</strong></h3>
@@ -107,7 +108,7 @@ ENDCASE</code></pre>
 ENDCASE</code></pre>
 
 <h3><strong>VARIABLE</strong></h3>
-<pre><code>DECLARE &lt;identifier&gt; : &ltdata type&gt;
+<pre><code>DECLARE &lt;identifier&gt; : &lt;data type&gt;
 </code></pre>
 <p><strong>Example:</strong></p>
 <pre><code>DECLARE Count : INTEGER
@@ -123,6 +124,24 @@ CONSTANT &lt;identifier&gt; = &lt;value&gt;
 <pre><code>CONSTANT const &lt;- 114514
 OUTPUT const // 114514
 const &lt;- const + 1 // Error: Cannot change constant value
+</code></pre>
+
+<h3><strong>USER DEFINED DATA TYPE</strong></h3>
+<pre><code>TYPE &lt;identifier&gt;
+    DECLARE &lt;attribute&gt; : &lt;data type&gt;
+    ...
+ENDTYPE</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>TYPE Player
+    DECLARE username : STRING
+    DECLARE password : STRING
+    DECLARE score : INTEGER
+ENDTYPE
+
+DECLARE nekawah : Player
+nekawah.username &lt;- "NekawaH"
+nekawah.password &lt;- "hello114514_world1919810"
+nekawah.score &lt;- 114514
 </code></pre>
 
 <h3><strong>ARRAY</strong></h3>
@@ -210,6 +229,7 @@ OUTPUT a, " ", b // 2 1</code></pre>
 READFILE &lt;file identifier&gt;, &lt;variable&gt;
 WRITEFILE &lt;file identifier&gt;, &lt;data&gt;
 CLOSEFILE &lt;file identifier&gt;
+DOWNLOAD &lt;file identifier&gt;
 EOF(&lt;file identifier&gt;)
 </code></pre>
 <p><strong>Example:</strong></p>
@@ -219,11 +239,14 @@ CLOSEFILE "File.txt"
 OPENFILE "File.txt" FOR APPEND
 WRITEFILE "File.txt", "Another line"
 CLOSEFILE "File.txt"
+
 OPENFILE "File.txt" FOR READ
 WHILE NOT EOF("File.txt")
     READFILE "File.txt", text
     OUTPUT text
-ENDWHILE</code></pre>
+ENDWHILE
+DOWNLOAD "File.txt"
+CLOSEFILE "File.txt"</code></pre>
 
 <h3><strong>BROWSER POPUP</strong></h3>
 <pre><code>POPUP &lt;boolean&gt;</code></pre>
