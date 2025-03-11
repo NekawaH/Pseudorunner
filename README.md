@@ -169,6 +169,17 @@ OUTPUT Ref // 1919
 OUTPUT Val // 1919
 </code></pre>
 
+<h3><strong>DATA TYPE CONVERSION</strong></h3>
+<pre><code>STR(&lt;argument&gt;)
+NUM(&lt;argument&gt;)
+BOOL(&lt;argument&gt;)
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>OUTPUT STR(1) & STR(2) // 12
+OUTPUT NUM("12") + NUM(TRUE) // 13
+OUTPUT BOOL(1 AND 0) // FALSE
+</code></pre>
+
 <h3><strong>STRING</strong></h3>
 <pre><code>LEFT(&lt;string&gt;,&lt;length&gt;)
 RIGHT(&lt;string&gt;,&lt;length&gt;)
