@@ -489,6 +489,71 @@ class PseudoInterpreter {
         // Test the string against the regular expression
         return regex.test(expr);
     }
+
+    replaceNum(expr) {
+        let stack = [];
+        let start = -1;
+        let end = -1;
+    
+        for (let i = 0; i < expr.length; i++) {
+            if (expr[i] === '(') {
+                if (stack.length === 0 && expr.substring(i - 3, i) === 'NUM') {
+                    start = i;
+                }
+                stack.push('(');
+            } else if (expr[i] === ')') {
+                stack.pop();
+                if (stack.length === 0 && start !== -1) {
+                    end = i;
+                    break;
+                }
+            }
+        }
+    
+        if (start !== -1 && end !== -1) {
+            let argExpr = expr.substring(start + 1, end);
+            let result;
+            try {
+                if (String(this.evalExpression(argExpr.trim())).toUpperCase() === "TRUE") result = "1";
+                else if (String(this.evalExpression(argExpr.trim())).toUpperCase() === "FALSE") result = "0";
+                else result = parseFloat(this.evalExpression(argExpr.trim()));
+            } catch {
+                throw new Error(`Invalid expression: ${argExpr}`);
+            }
+            expr = expr.substring(0, start - 3) + result + expr.substring(end + 1);
+        }
+    
+        return expr;
+    }
+
+    replaceBool(expr) {
+        let stack = [];
+        let start = -1;
+        let end = -1;
+    
+        for (let i = 0; i < expr.length; i++) {
+            if (expr[i] === '(') {
+                if (stack.length === 0 && expr.substring(i - 4, i) === 'BOOL') {
+                    start = i;
+                }
+                stack.push('(');
+            } else if (expr[i] === ')') {
+                stack.pop();
+                if (stack.length === 0 && start !== -1) {
+                    end = i;
+                    break;
+                }
+            }
+        }
+    
+        if (start !== -1 && end !== -1) {
+            let argExpr = expr.substring(start + 1, end);
+            let result = this.evalExpression(argExpr.trim()) ? "TRUE" : "FALSE";
+            expr = expr.substring(0, start - 4) + result + expr.substring(end + 1);
+        }
+    
+        return expr;
+    }
     
     evalExpression(expr) {
         expr = String(expr);
@@ -632,10 +697,21 @@ class PseudoInterpreter {
             });
         }
 
+        // Handle NUM function
+        while (expr.includes("NUM(")) {
+            expr = this.replaceNum(expr);
+        }
+
+        // Handle BOOL function
+        while (expr.includes("BOOL(")) {
+            expr = this.replaceBool(expr);
+        }        
+
         // Handle strings
         if (this.isValidStringExpression(expr)) return expr;
 
         try {
+            if (!isNaN(expr) && !isNaN(Number(expr)) || expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') return expr;
             expr = eval(expr);
             if (!isNaN(expr) && !isNaN(Number(expr)) || expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') return expr;
             else return `"${expr}"`;
@@ -1362,7 +1438,7 @@ class PseudoInterpreter {
                     throw new SyntaxError(`Unknown command: ${token[0]}`);
             }
 
-            i++; 
+            i++;
         }
     }
 }
