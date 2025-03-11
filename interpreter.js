@@ -490,14 +490,14 @@ class PseudoInterpreter {
         return regex.test(expr);
     }
 
-    replaceString(expr) {
+    replaceSTR(expr) {
         let stack = [];
         let start = -1;
         let end = -1;
     
         for (let i = 0; i < expr.length; i++) {
             if (expr[i] === '(') {
-                if (stack.length === 0 && expr.substring(i - 6, i) === 'STRING') {
+                if (stack.length === 0 && expr.substring(i - 3, i) === 'STR') {
                     start = i;
                 }
                 stack.push('(');
@@ -513,13 +513,13 @@ class PseudoInterpreter {
         if (start !== -1 && end !== -1) {
             let argExpr = expr.substring(start + 1, end);
             let result = '"' + String(this.evalExpression(argExpr.trim())) + '"';
-            expr = expr.substring(0, start - 6) + result + expr.substring(end + 1);
+            expr = expr.substring(0, start - 3) + result + expr.substring(end + 1);
         }
     
         return expr;
     }
 
-    replaceNum(expr) {
+    replaceNUM(expr) {
         let stack = [];
         let start = -1;
         let end = -1;
@@ -555,7 +555,7 @@ class PseudoInterpreter {
         return expr;
     }
 
-    replaceBool(expr) {
+    replaceBOOL(expr) {
         let stack = [];
         let start = -1;
         let end = -1;
@@ -726,19 +726,19 @@ class PseudoInterpreter {
             });
         }
 
-        // Handle STRING function
-        while (expr.includes("STRING(")) {
-            expr = this.replaceString(expr);
+        // Handle STR function
+        while (expr.includes("STR(")) {
+            expr = this.replaceSTR(expr);
         }  
 
         // Handle NUM function
         while (expr.includes("NUM(")) {
-            expr = this.replaceNum(expr);
+            expr = this.replaceNUM(expr);
         }
 
         // Handle BOOL function
         while (expr.includes("BOOL(")) {
-            expr = this.replaceBool(expr);
+            expr = this.replaceBOOL(expr);
         }        
 
         // Handle strings
