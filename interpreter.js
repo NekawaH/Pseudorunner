@@ -545,6 +545,7 @@ class PseudoInterpreter {
             try {
                 if (String(this.evalExpression(argExpr.trim())).toUpperCase() === "TRUE") result = "1";
                 else if (String(this.evalExpression(argExpr.trim())).toUpperCase() === "FALSE") result = "0";
+                else if (this.isValidStringExpression(String(this.evalExpression(argExpr.trim())))) result = parseFloat(this.removeQuotes(this.evalExpression(argExpr.trim())));
                 else result = parseFloat(this.evalExpression(argExpr.trim()));
             } catch {
                 throw new Error(`Invalid expression: ${argExpr}`);
