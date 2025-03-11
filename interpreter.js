@@ -490,6 +490,35 @@ class PseudoInterpreter {
         return regex.test(expr);
     }
 
+    replaceString(expr) {
+        let stack = [];
+        let start = -1;
+        let end = -1;
+    
+        for (let i = 0; i < expr.length; i++) {
+            if (expr[i] === '(') {
+                if (stack.length === 0 && expr.substring(i - 6, i) === 'STRING') {
+                    start = i;
+                }
+                stack.push('(');
+            } else if (expr[i] === ')') {
+                stack.pop();
+                if (stack.length === 0 && start !== -1) {
+                    end = i;
+                    break;
+                }
+            }
+        }
+    
+        if (start !== -1 && end !== -1) {
+            let argExpr = expr.substring(start + 1, end);
+            let result = '"' + String(this.evalExpression(argExpr.trim())) + '"';
+            expr = expr.substring(0, start - 6) + result + expr.substring(end + 1);
+        }
+    
+        return expr;
+    }
+
     replaceNum(expr) {
         let stack = [];
         let start = -1;
@@ -696,6 +725,11 @@ class PseudoInterpreter {
                 return Math.max(val1, val2);
             });
         }
+
+        // Handle STRING function
+        while (expr.includes("STRING(")) {
+            expr = this.replaceString(expr);
+        }  
 
         // Handle NUM function
         while (expr.includes("NUM(")) {
