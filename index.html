@@ -106,12 +106,12 @@ FOR Out <- 1 TO N
 NEXT Out">Cities and Countries</a></li>
 
         <li><a class="payload" href="#" data-copy="PROCEDURE PrintFile(file:STRING)
-OPENFILE file FOR READ
-WHILE NOT EOF(file) DO
-    READFILE file, Line
-    OUTPUT Line
-ENDWHILE
-CLOSEFILE file
+    OPENFILE file FOR READ
+    WHILE NOT EOF(file) DO
+        READFILE file, Line
+        OUTPUT Line
+    ENDWHILE
+    CLOSEFILE file
 ENDPROCEDURE
 
 OPENFILE &quot;File.txt&quot; FOR WRITE
