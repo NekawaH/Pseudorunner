@@ -184,6 +184,7 @@ OUTPUT BOOL(1 AND 0) // FALSE
 <pre><code>LEFT(&lt;string&gt;,&lt;length&gt;)
 RIGHT(&lt;string&gt;,&lt;length&gt;)
 MID(&lt;string&gt;,&lt;position&gt;,&lt;length&gt;)
+SUBSTRING(&lt;string&gt;,&lt;position&gt;,&lt;length&gt;)
 LENGTH(&lt;string&gt;)
 UCASE(&lt;string&gt;)
 LCASE(&lt;string&gt;)
@@ -192,6 +193,7 @@ LCASE(&lt;string&gt;)
 <pre><code>OUTPUT LEFT("ABCDEFGH",3) // "ABC"
 OUTPUT RIGHT("ABCDEFGH",3) // "FGH"
 OUTPUT MID("ABCDEFGH",2,3) // "BCD"
+OUTPUT SUBSTRING("Hello World",1,5) // "Hello"
 OUTPUT LENGTH("HELLO world") // 11
 OUTPUT UCASE("HELLO world") // "HELLO WORLD"
 OUTPUT LCASE("HELLO world") // "hello world"
@@ -199,9 +201,18 @@ OUTPUT LCASE("HELLO world") // "hello world"
 
 <h3><strong>RANDOM</strong></h3>
 <pre><code>RAND(&lt;number&gt;)
+RANDOM()
 </code></pre>
 <p><strong>Example:</strong></p>
 <pre><code>OUTPUT RAND(85) // a real number between [0,85)
+OUTPUT RANDOM() // a real number between [0,1)
+</code></pre>
+
+<h3><strong>ROUND</strong></h3>
+<pre><code>ROUND(&lt;number&gt;,&lt;places&gt;)
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>OUTPUT ROUND(3.1415926,2) // 3.14
 </code></pre>
 
 <h3><strong>FUNCTION</strong></h3>
