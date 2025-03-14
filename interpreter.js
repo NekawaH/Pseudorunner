@@ -638,7 +638,7 @@ class PseudoInterpreter {
         expr = expr.replace(/(\w+)\s+DIV\s+(\w+)/g, 'Math.floor($1 / $2)'); // Floor division
         expr = expr.replace(/(^|[^=!<>])=([^=]|$)/g, '$1==$2');             // Equal to
 
-        // Handle LENGTH, LEFT, RIGHT, MID functions
+        // Handle LENGTH, LEFT, RIGHT, MID, SUBSTRING functions
         while (expr.includes("LENGTH(")) {
             expr = expr.replace(/LENGTH\(([^)]*\(.*?\)[^)]*|[^()]+)\)/g, (match, strExpr) => {
                 const evaluatedString = this.removeQuotes(this.evalExpression(strExpr.trim()));
@@ -671,6 +671,15 @@ class PseudoInterpreter {
             });
         }
 
+        while (expr.includes("SUBSTRING(")) {
+            expr = expr.replace(/SUBSTRING\(([^,]+),\s*([^\s,]+),\s*([^\)]+)\)/g, (match, strExpr, startExpr, lenExpr) => {
+                const str = this.removeQuotes(String(this.evalExpression(strExpr.trim())));
+                const start = parseInt(this.evalExpression(startExpr.trim()));
+                const len = parseInt(this.evalExpression(lenExpr.trim()));
+                return '"' + String(str.substring(start - 1, start - 1 + len)) + '"';
+            });
+        }
+
         // Handle UCASE and LCASE functions
         while (expr.includes("UCASE(") || expr.includes("LCASE(")) {
             expr = expr.replace(/UCASE\(([^)]*\(.*?\)[^)]*|[^()]+)\)/g, (match, strExpr) => {
@@ -692,11 +701,26 @@ class PseudoInterpreter {
             });
         }
 
-        // Handle RAND function
+        // Handle RAND/RANDOM function
         while (expr.includes("RAND(")) {
             expr = expr.replace(/RAND\(([^)]*\(.*?\)[^)]*|[^()]+)\)/g, (match, numExpr) => {
                 const upperLimit = this.evalExpression(numExpr.trim());
                 return Math.random() * upperLimit; // Return a random float in [0,x)
+            });
+        }
+
+        while (expr.includes("RANDOM(")) {
+            expr = expr.replace(/RANDOM\(\)/g, (match) => {
+                return Math.random(); // Return a random float in [0,1)
+            });
+        }
+
+        // Handle ROUND function
+        while (expr.includes("ROUND(")) {
+            expr = expr.replace(/ROUND\(([^,]+),\s*([^\)]+)\)/g, (match, valExpr, placeExpr) => {
+                const val = this.evalExpression(valExpr.trim());
+                const place = this.evalExpression(placeExpr.trim());
+                return Math.round(val * Math.pow(10,place)) /  Math.pow(10,place);
             });
         }
 
