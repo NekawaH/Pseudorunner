@@ -770,7 +770,7 @@ class PseudoInterpreter {
         if (this.isValidStringExpression(expr)) return expr;
 
         try {
-            if (expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') return expr;
+            if (expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') return expr.toUpperCase() === 'TRUE' ? true : false;
             expr = eval(expr);
             if (!isNaN(expr) && !isNaN(Number(expr)) || expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') return expr;
             else return `"${expr}"`;
