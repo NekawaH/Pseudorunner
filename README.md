@@ -261,7 +261,6 @@ CLOSEFILE "File.txt"
 OPENFILE "File.txt" FOR APPEND
 WRITEFILE "File.txt", "Another line"
 CLOSEFILE "File.txt"
-
 OPENFILE "File.txt" FOR READ
 WHILE NOT EOF("File.txt")
     READFILE "File.txt", text
