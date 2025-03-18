@@ -83,7 +83,7 @@ class PseudoInterpreter {
         } else if (line.startsWith("THEN")) {
             return ["THEN"];
         } else if (line.startsWith("ELSE IF")) {
-            const match = line.match(/^ELSE IF (.+)$/);
+            const match = line.match(/^ELSE IF (.*?)(?: THEN)?$/);
             this.elseIfTracker[this.ifCountTracker - 1]++;
             return ["ELSE IF", match[1]];
         } else if (line === "ELSE") {
