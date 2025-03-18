@@ -76,7 +76,7 @@ NEXT i</code></pre>
 <h3><strong>IF/ELSE IF/ELSE</strong></h3>
 <pre><code>IF &lt;condition&gt; THEN
     &lt;statements&gt;
-ELSE IF &lt;condition&gt;
+ELSE IF &lt;condition&gt; THEN
     &lt;statements&gt;
 ELSE
     &lt;statements&gt;
@@ -84,7 +84,7 @@ ENDIF</code></pre>
 <p><strong>Example:</strong></p>
 <pre><code>IF x > 10 THEN
     OUTPUT 'x is greater than 10'
-ELSE IF x < 10
+ELSE IF x < 10 THEN
     OUTPUT 'x is less than 10'
 ELSE
     OUTPUT 'x is equal to 10'
