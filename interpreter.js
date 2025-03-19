@@ -233,7 +233,7 @@ class PseudoInterpreter {
 
     // Utilities
 
-    findInitialValue(expr) {
+    findDefaultValue(expr) {
         if (expr === "INTEGER" || expr === "INT" || expr === "REAL" || expr === "FLOAT") {
             return 0
         }
@@ -1344,7 +1344,7 @@ class PseudoInterpreter {
                     break;
 
                 case "DECLAREVAR":
-                    initialValue = this.findInitialValue(token[2]);
+                    initialValue = this.findDefaultValue(token[2]);
                     if (this.declareTypeName === null) {
                         if (Array.isArray(token[1])) {
                             token[1].forEach(varName => {
@@ -1367,7 +1367,7 @@ class PseudoInterpreter {
                     break;
 
                 case "DECLAREARRAY":
-                    initialValue = this.findInitialValue(token[3]);
+                    initialValue = this.findDefaultValue(token[3]);
                     if (this.declareTypeName === null) {
                         this.arrays[token[1]] = Array(token[2][1] + 1);
                         this.arrays[token[1]].fill(initialValue);
@@ -1378,7 +1378,7 @@ class PseudoInterpreter {
                     break;
                 
                 case "DECLARE2DARRAY":
-                    initialValue = this.findInitialValue(token[4]);
+                    initialValue = this.findDefaultValue(token[4]);
                     if (this.declareTypeName === null) {
                         this.arrays[token[1]] = Array(token[2][1] + 1);
                         for (let i = 0; i < token[2][1] + 1; i++) {
