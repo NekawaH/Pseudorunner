@@ -1,14 +1,6 @@
 auth = false;
 banned = false;
 
-function simpleHash(str) {
-    let hash = 5381;
-    for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) + hash) + str.charCodeAt(i);
-    }
-    return hash.toString();
-}
-
 class PseudoInterpreter {
     constructor() {
         this.continueFlag = false;
@@ -27,6 +19,14 @@ class PseudoInterpreter {
         this.types = {};
         this.declareTypeName = null;
         this.popup = false;
+    }
+
+    simpleHash(str) {
+        let hash = 5381;
+        for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) + hash) + str.charCodeAt(i);
+        }
+        return hash.toString();
     }
 
     tokenize(line) {
@@ -932,8 +932,7 @@ class PseudoInterpreter {
 
         if (!auth) {
             const inputAuthCode = prompt(`Enter the authentication code: `);
-            console.log(simpleHash(inputAuthCode));
-            if (simpleHash(inputAuthCode) === "-5490770733" && !banned) {
+            if (this.simpleHash(inputAuthCode) === "-5490770733" && !banned) {
                 auth = true;
                 alert("You are authenticated!");
             } else {
@@ -1330,6 +1329,7 @@ class PseudoInterpreter {
                             break;
                         }
                     }
+                    this.variables[iteratorName] = undefined;
                     break;
 
                 case "NEXT":
