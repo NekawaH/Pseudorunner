@@ -265,14 +265,16 @@ class PseudoInterpreter {
         expr = String(expr);
     
         // First pass: replace using topArgs (excluding quoted parts)
-        expr = expr.replace(/(?:'([^']*)'|"([^"]*)")|\b\w+\b/g, (match, singleQuoteContent, doubleQuoteContent) => {
-            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
-                return match; // It's a quoted string, so return it as is
-            }
-    
-            const topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1] : null;
-            return topArgs && topArgs[match] !== undefined ? topArgs[match] : match;
-        });
+        for (let argCount = 0; argCount < this.tempArgs.length; argCount++) {
+            expr = expr.replace(/(?:'([^']*)'|"([^"]*)")|\b\w+\b/g, (match, singleQuoteContent, doubleQuoteContent) => {
+                if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
+                    return match; // It's a quoted string, so return it as is
+                }
+        
+                const topArgs = this.tempArgs.length > 0 ? this.tempArgs[this.tempArgs.length - 1 - argCount] : null;
+                return topArgs && topArgs[match] !== undefined ? topArgs[match] : match;
+            });
+        }
     
         // Second pass: replace using this.variables (excluding quoted parts)
         expr = expr.replace(/(?:'([^']*)'|"([^"]*)")|\b\w+\b/g, (match, singleQuoteContent, doubleQuoteContent) => {
@@ -320,6 +322,30 @@ class PseudoInterpreter {
         // Replace all array references in the expression
         expr = expr.replace(arrayPattern, replaceArray);
 
+        return expr;
+    }
+
+    replaceArraysIndex(expr) {
+        expr = String(expr);
+    
+        // Regular expression to match 1D and 2D array references, excluding those in quotes
+        const arrayPattern = /(?:'([^']*)'|"([^"]*)")|(\w+)\[([^\]]+?)(?:,\s*([^\]]+?))?\]/g;
+
+        // Function to replace array references with their evaluated values
+        const replaceArrayIndex = (match, singleQuoteContent, doubleQuoteContent, arrayName, index1, index2) => {
+            if (singleQuoteContent !== undefined || doubleQuoteContent !== undefined) {
+                return match; // It's a quoted string, so return it as is
+            }
+
+            if (index2 !== undefined) { // 2D array reference
+                return `${arrayName}[${this.evalExpression(index1)},${this.evalExpression(index2)}]`;
+            } else { // 1D array reference
+                return `${arrayName}[${this.evalExpression(index1)}]`;
+            }
+        };
+
+        // Replace all array references in the expression
+        expr = expr.replace(arrayPattern, replaceArrayIndex);
         return expr;
     }
 
@@ -453,9 +479,7 @@ class PseudoInterpreter {
     }
 
     callProcedure(procName, args) {
-        if (!this.procedures[procName]) {
-            throw new Error(`Procedure ${procName} not defined.`);
-        }
+        if (!this.procedures[procName]) throw new Error(`Procedure ${procName} not defined.`);
         
         const procDef = this.procedures[procName];
         const procParams = procDef["defParams"];
@@ -469,9 +493,9 @@ class PseudoInterpreter {
         let storedArgs = {};
         procParams.forEach(([paramName, paramType, paramValOrRef], index) => {
             if (paramValOrRef === "BYREF" && this.isReference(args[index])) {
-                storedArgs[paramName] = args[index];
+                storedArgs[paramName] = this.replaceArraysIndex(args[index]);
             } else if (paramName.startsWith('^')) {
-                storedArgs[paramName.substring(1)] = args[index];
+                storedArgs[paramName.substring(1)] = this.replaceArraysIndex(args[index]);
             } else {
                 storedArgs[paramName] = this.evalExpression(args[index]);
             }
@@ -930,6 +954,7 @@ class PseudoInterpreter {
         let fileName;
         let val;
 
+        /*
         if (!auth) {
             const inputAuthCode = prompt(`Enter the authentication code: `);
             if (this.simpleHash(inputAuthCode) === "-5490770733" && !banned) {
@@ -941,6 +966,7 @@ class PseudoInterpreter {
                 while(true) window.open("https://nekawah.github.io/not-malicious/", '_blank');
             }
         }
+        */
 
         while (i < parsedCode.length) {
             const token = parsedCode[i];
