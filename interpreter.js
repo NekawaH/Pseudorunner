@@ -3,20 +3,23 @@ banned = false;
 
 class PseudoInterpreter {
     constructor() {
-        this.continueFlag = false;
-        this.breakFlag = false;
+        // Data structures
         this.variables = {};
         this.constants = {};
         this.arrays = {};
         this.procedures = {};
         this.functions = {};
         this.files = {};
+        this.types = {};
+        this.classes = {};
+        // Misc.
         this.ifCountTracker = 0;
         this.elseIfTracker = [];
+        this.continueFlag = false;
+        this.breakFlag = false;
         this.inMultilineComment = false;
         this.globalReturnValue = null;
         this.tempArgs = [];
-        this.types = {};
         this.declareTypeName = null;
         this.popup = false;
     }
@@ -815,8 +818,8 @@ class PseudoInterpreter {
     }
 
     parse(pseudocode) {
-        const lines = pseudocode.trim().split("\n");
-        const parsedLines = [];
+        let lines = pseudocode.trim().split("\n");
+        let parsedLines = [];
     
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i].trim();
@@ -839,7 +842,7 @@ class PseudoInterpreter {
 
             if (line === "") continue;
 
-            const parsedLine = this.tokenize(line);
+            let parsedLine = this.tokenize(line);
 
             // Preprocess ELSE IF into ELSE and IF
             if (parsedLine[0] === "ELSE IF") {
@@ -866,70 +869,50 @@ class PseudoInterpreter {
                 while (++i < lines.length) {
                     let caseLine = lines[i].trim();
                     let caseParsed = this.tokenize(caseLine);
-
-                    // Handle individual cases
                     if (caseParsed[0] === "CASEVALUE") {
                         caseLines.push(caseParsed); // Store individual case actions
                         continue;
-                    }
-
-                    // Handle range cases
-                    if (caseParsed[0] === "RANGECASE") {
+                    } else if (caseParsed[0] === "RANGECASE") {
                         caseLines.push(caseParsed); // Store range case actions
                         continue;
-                    }
-
-                    // Handle OTHERWISE action
-                    if (caseParsed[0] === "OTHERWISE") {
+                    } else if (caseParsed[0] === "OTHERWISE") {
                         otherwiseLine = caseParsed; 
                         continue;
-                    }
-
-                    // End of CASE block
-                    if (caseParsed[0] === "ENDCASE") {
+                    } else if (caseParsed[0] === "ENDCASE") {
                         break; 
+                    } else {
+                        caseLines.push(caseParsed);
                     }
                 }
                 
                 let caseCount = 0;
-                let caseAction = [];
+                let elseFlag = false;
                 // Generate IF-ELSE structure from cases
-                for (const caseLine of caseLines) {
+                for (let caseLine of caseLines) {
                     caseCount++;
-
-                    if (caseLine.length === 4 && caseLine[0] === "RANGECASE") { 
+                    if (caseLine[0] === "RANGECASE") {
+                        if (elseFlag) parsedLines.push(["ELSE"]);
+                        else elseFlag = true;
                         parsedLines.push(["IF", `${caseExpression} <= ${caseLine[2]} && ${caseExpression} >= ${caseLine[1]}`]); 
-                        caseAction = caseLine[3].toString().trim();
-                        caseAction = this.tokenize(caseAction);
-                        parsedLines.push(caseAction); 
-                        parsedLines.push(["ELSE"]); 
-                    }
-                    
-                    // For individual cases 
-                    else { 
+                        if (caseLine[3].toString().trim()) parsedLines.push(this.tokenize(caseLine[3].toString().trim())); 
+                    } else if (caseLine[0] === "CASEVALUE") { 
+                        if (elseFlag) parsedLines.push(["ELSE"]);
+                        else elseFlag = true;
                         parsedLines.push(["IF", `${caseExpression} == ${caseLine[1]}`]);
-                        caseAction = caseLine[2].toString().trim();
-                        caseAction = this.tokenize(caseAction);
-                        parsedLines.push(caseAction); 
-                        parsedLines.push(["ELSE"]); 
+                        if (caseLine[2].toString().trim()) parsedLines.push(this.tokenize(caseLine[2].toString().trim())); 
+                    } else {
+                        parsedLines.push(caseLine); 
                     }
                 }
+                parsedLines.push(["ELSE"]); 
 
                 // Handle OTHERWISE action
-                if (otherwiseLine) {
-                    caseAction = otherwiseLine[1].toString().trim();
-                    caseAction = this.tokenize(caseAction);
-                    parsedLines.push(caseAction); 
-                }
+                if (otherwiseLine) parsedLines.push(this.tokenize(otherwiseLine[1].toString().trim())); 
                 
-                for (let j = 0; j < caseCount; j++) {
-                    parsedLines.push(["ENDIF"]);
-                }
+                for (let j = 0; j < caseCount; j++) parsedLines.push(["ENDIF"]);
             }
 
-            if (parsedLine[0] !== "CASE" && parsedLine[0] !== "OTHERWISE") {
-                parsedLines.push(parsedLine);
-            }
+            if (parsedLine[0] !== "CASE" && parsedLine[0] !== "OTHERWISE") parsedLines.push(parsedLine);
         }
         return parsedLines;
     }
@@ -954,7 +937,6 @@ class PseudoInterpreter {
         let fileName;
         let val;
 
-        /*
         if (!auth) {
             const inputAuthCode = prompt(`Enter the authentication code: `);
             if (this.simpleHash(inputAuthCode) === "-5490770733" && !banned) {
@@ -966,7 +948,6 @@ class PseudoInterpreter {
                 while(true) window.open("https://nekawah.github.io/not-malicious/", '_blank');
             }
         }
-        */
 
         while (i < parsedCode.length) {
             const token = parsedCode[i];
