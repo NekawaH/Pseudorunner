@@ -77,6 +77,45 @@ class PseudoInterpreter {
                 return ["OUTPUT", args];
             }
             return null; // Or handle the case where the regex doesn't match as needed
+        } else if (line.startsWith("PRINT")) {
+            const match = line.match(/^PRINT\s+(.*)$/);
+            if (match) {
+                const argsString = match[1];
+                const args = [];
+                let currentArg = "";
+                let inQuotes = false;
+                let parenLevel = 0;
+                let bracketLevel = 0;
+    
+                for (let i = 0; i < argsString.length; i++) {
+                    const char = argsString[i];
+    
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                        currentArg += char;
+                    } else if (char === '(') {
+                        parenLevel++;
+                        currentArg += char;
+                    } else if (char === ')') {
+                        parenLevel--;
+                        currentArg += char;
+                    } else if (char === '[') {
+                        bracketLevel++;
+                        currentArg += char;
+                    } else if (char === ']') {
+                        bracketLevel--;
+                        currentArg += char;
+                    } else if (char === ',' && !inQuotes && parenLevel === 0 && bracketLevel === 0) {
+                        args.push(currentArg.trim());
+                        currentArg = "";
+                    } else {
+                        currentArg += char;
+                    }
+                }
+                args.push(currentArg.trim()); // Add the last argument
+                return ["OUTPUT", args];
+            }
+            return null; // Or handle the case where the regex doesn't match as needed
         } else if (line.startsWith("INPUT")) {
             const match = line.match(/^INPUT\s+(.*)$/);
             return ["INPUT", match[1]];
