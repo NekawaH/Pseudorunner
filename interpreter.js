@@ -243,7 +243,7 @@ class PseudoInterpreter {
             return 0
         }
         if (expr === "CHARACTER" || expr === "CHAR" || expr === "STRING" || expr === "STR") {
-            return "";
+            return '""';
         }
         if (expr === "BOOLEAN" || expr === "BOOL") {
             return false;
@@ -931,7 +931,7 @@ class PseudoInterpreter {
         let procName;
         let defParams;
         let topArgs;
-        let initialValue;
+        let defaultValue;
         let typeName;
         let file;
         let fileLine;
@@ -1358,52 +1358,54 @@ class PseudoInterpreter {
                     break;
 
                 case "DECLAREVAR":
-                    initialValue = this.findDefaultValue(token[2]);
+                    defaultValue = this.findDefaultValue(token[2]);
                     if (this.declareTypeName === null) {
                         if (Array.isArray(token[1])) {
                             token[1].forEach(varName => {
-                                this.variables[varName] = initialValue;
+                                this.variables[varName] = defaultValue;
                             });
                         } else {
                             // Handle the case where token[1] is not an array (e.g., a single variable)
-                            this.variables[token[1]] = initialValue;
+                            this.variables[token[1]] = defaultValue;
                         }
                     } else {
                         if (Array.isArray(token[1])) {
                             token[1].forEach(varName => {
-                                this.types[this.declareTypeName][varName] = initialValue;
+                                this.types[this.declareTypeName][varName] = defaultValue;
                             });
                         } else {
                             // Handle the case where token[1] is not an array (e.g., a single variable)
-                            this.types[this.declareTypeName][token[1]] = initialValue;
+                            this.types[this.declareTypeName][token[1]] = defaultValue;
                         }
                     }
                     break;
 
                 case "DECLAREARRAY":
-                    initialValue = this.findDefaultValue(token[3]);
+                    defaultValue = this.findDefaultValue(token[3]);
+                    console.log(defaultValue);
                     if (this.declareTypeName === null) {
                         this.arrays[token[1]] = Array(token[2][1] + 1);
-                        this.arrays[token[1]].fill(initialValue);
+                        this.arrays[token[1]].fill(defaultValue);
                     } else {
                         this.types[this.declareTypeName][token[1]] = Array(token[2][1] + 1);
-                        this.types[this.declareTypeName][token[1]].fill(initialValue);
+                        this.types[this.declareTypeName][token[1]].fill(defaultValue);
                     }
                     break;
                 
                 case "DECLARE2DARRAY":
-                    initialValue = this.findDefaultValue(token[4]);
+                    defaultValue = this.findDefaultValue(token[4]);
+                    console.log(defaultValue);
                     if (this.declareTypeName === null) {
                         this.arrays[token[1]] = Array(token[2][1] + 1);
                         for (let i = 0; i < token[2][1] + 1; i++) {
                             this.arrays[token[1]][i] = Array(token[3][1] + 1);
-                            this.arrays[token[1]][i].fill(initialValue);
+                            this.arrays[token[1]][i].fill(defaultValue);
                         }
                     } else {
                         this.types[this.declareTypeName][token[1]] = Array(token[2][1] + 1);
                         for (let i = 0; i < token[2][1] + 1; i++) {
                             this.types[this.declareTypeName][token[1]][i] = Array(token[3][1] + 1);
-                            this.types[this.declareTypeName][token[1]][i].fill(initialValue);
+                            this.types[this.declareTypeName][token[1]][i].fill(defaultValue);
                         }
                     }
                     break;
