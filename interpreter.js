@@ -102,8 +102,8 @@ class PseudoInterpreter {
             return ["DO"];
         } else if (line === "ENDWHILE") {
             return ["ENDWHILE"];
-        } else if (/^FOR (\w+)\s*(<-|=)\s*(.+?)\s*TO\s*(.+?)(\s*STEP\s*(.+?))?$/.test(line)) {
-            const match = line.match(/^FOR (\w+)\s*(<-|=)\s*(.+?)\s*TO\s*(.+?)(\s*STEP\s*(.+?))?$/);
+        } else if (/^FOR (\w+)\s*(<-|=|←)\s*(.+?)\s*TO\s*(.+?)(\s*STEP\s*(.+?))?$/.test(line)) {
+            const match = line.match(/^FOR (\w+)\s*(<-|=|←)\s*(.+?)\s*TO\s*(.+?)(\s*STEP\s*(.+?))?$/);
             const stepValue = match[6] ? match[6] : '1'; // Default to '1' if STEP is not present
             return ["FOR", match[1], match[3], match[4], stepValue];
         } else if (line.startsWith("NEXT")) {
@@ -148,11 +148,11 @@ class PseudoInterpreter {
             return ["BREAK"];
         } else if (line === "PASS") {
             return ["PASS"];
-        } else if (/^CONSTANT (.+?)\s*(<-|=) (.+)$/.test(line)) {
-            const match = line.match(/^CONSTANT (.+?)\s*(<-|=) (.+)$/);
+        } else if (/^CONSTANT (.+?)\s*(<-|=|←) (.+)$/.test(line)) {
+            const match = line.match(/^CONSTANT (.+?)\s*(<-|=|←) (.+)$/);
             return ["CONSTANT", match[1], match[3]];
-        } else if (/^(.+?)\s*(<-|=) (.+)$/.test(line)) {
-            const match = line.match(/^(.+?)\s*(<-|=) (.+)$/);
+        } else if (/^(.+?)\s*(<-|=|←) (.+)$/.test(line)) {
+            const match = line.match(/^(.+?)\s*(<-|=|←) (.+)$/);
             return ["SET", match[1], match[3]];
         } else if (/^SET\s+(.+?)\s+TO\s+(.+)$/.test(line)) {
             const match = line.match(/^SET\s+(.+?)\s+TO\s+(.+)$/);
