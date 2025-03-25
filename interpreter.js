@@ -1125,7 +1125,6 @@ class PseudoInterpreter {
                     
                 case "POPUP":
                     this.popup = this.evalExpression(token[1]);
-                    console.log(token[114514]);
                     break;
 
                 case "PASS":
@@ -1545,7 +1544,6 @@ class PseudoInterpreter {
 
                 case "DECLAREARRAY":
                     defaultValue = this.findDefaultValue(token[3]);
-                    console.log(defaultValue);
                     if (this.declareTypeName === null) {
                         this.arrays[token[1]] = Array(token[2][1] + 1);
                         this.arrays[token[1]].fill(defaultValue);
@@ -1557,7 +1555,6 @@ class PseudoInterpreter {
                 
                 case "DECLARE2DARRAY":
                     defaultValue = this.findDefaultValue(token[4]);
-                    console.log(defaultValue);
                     if (this.declareTypeName === null) {
                         this.arrays[token[1]] = Array(token[2][1] + 1);
                         for (let i = 0; i < token[2][1] + 1; i++) {
