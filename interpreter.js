@@ -13,6 +13,8 @@ class PseudoInterpreter {
         this.types = {};
         this.classes = {};
         // Misc.
+        this.currentTokenLine = '';
+        this.currentExpression = undefined;
         this.ifCountTracker = 0;
         this.elseIfTracker = [];
         this.continueFlag = false;
@@ -32,12 +34,17 @@ class PseudoInterpreter {
         return hash.toString();
     }
 
-    tokenize(line) {
+    tokenize(line,lineNumber) {
+        let token;
         if (line.startsWith("BOMB")) {
-            return ["BOMB"]
+            token = ["BOMB"]
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line.startsWith("POPUP")) {
             const match = line.match(/^POPUP\s+(.*)$/);
-            return ["POPUP", match[1]];
+            token = ["POPUP", match[1]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line.startsWith("OUTPUT")) {
             const match = line.match(/^OUTPUT\s+(.*)$/);
             if (match) {
@@ -74,11 +81,13 @@ class PseudoInterpreter {
                     }
                 }
                 args.push(currentArg.trim()); // Add the last argument
-                return ["OUTPUT", args];
+                token = ["OUTPUT", args];
+                token[114514] = "Line " + lineNumber + ": " + line + "\n";
+                return token;
             }
             return null; // Or handle the case where the regex doesn't match as needed
         } else if (line.startsWith("PRINT")) {
-            const match = line.match(/^PRINT\s+(.*)$/);
+            const match = line.match(/^OUTPUT\s+(.*)$/);
             if (match) {
                 const argsString = match[1];
                 const args = [];
@@ -113,89 +122,145 @@ class PseudoInterpreter {
                     }
                 }
                 args.push(currentArg.trim()); // Add the last argument
-                return ["OUTPUT", args];
+                token = ["OUTPUT", args];
+                token[114514] = "Line " + lineNumber + ": " + line + "\n";
+                return token;
             }
             return null; // Or handle the case where the regex doesn't match as needed
         } else if (line.startsWith("INPUT")) {
             const match = line.match(/^INPUT\s+(.*)$/);
-            return ["INPUT", match[1]];
+            token = ["INPUT", match[1]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line.startsWith("IF")) {
             const match = line.match(/^IF (.*?)(?: THEN)?$/);
             this.ifCountTracker++;
             this.elseIfTracker.push(0);
-            return ["IF", match[1].trim()];
+            token = ["IF", match[1].trim()];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line.startsWith("THEN")) {
-            return ["THEN"];
+            token = ["THEN"];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line.startsWith("ELSE IF")) {
             const match = line.match(/^ELSE IF (.*?)(?: THEN)?$/);
             this.elseIfTracker[this.ifCountTracker - 1]++;
-            return ["ELSE IF", match[1]];
+            token = ["ELSE IF", match[1]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line === "ELSE") {
-            return ["ELSE"];
+            token = ["ELSE"];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line === "ENDIF") {
-            return ["ENDIF"];
+            token = ["ENDIF"];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if ((/^WHILE (.*?)(?: DO)?$/).test(line)) {
             const match = line.match(/^WHILE (.*?)(?: DO)?$/);
-            return ["WHILE", match[1]];
+            token = ["WHILE", match[1]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line === "DO") {
-            return ["DO"];
+            token = ["DO"];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line === "ENDWHILE") {
-            return ["ENDWHILE"];
+            token = ["ENDWHILE"];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^FOR (\w+)\s*(<-|=|←)\s*(.+?)\s*TO\s*(.+?)(\s*STEP\s*(.+?))?$/.test(line)) {
             const match = line.match(/^FOR (\w+)\s*(<-|=|←)\s*(.+?)\s*TO\s*(.+?)(\s*STEP\s*(.+?))?$/);
             const stepValue = match[6] ? match[6] : '1'; // Default to '1' if STEP is not present
-            return ["FOR", match[1], match[3], match[4], stepValue];
+            token = ["FOR", match[1], match[3], match[4], stepValue];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line.startsWith("NEXT")) {
             const match = line.match(/^NEXT (\w+)$/);
-            return ["NEXT", match[1]];
+            token = ["NEXT", match[1]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line.startsWith("CASE OF")) {
             const match = line.match(/^CASE OF\s+(.*)$/);
-            return ["CASE", match[1]];
+            token = ["CASE", match[1]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line.startsWith("OTHERWISE")) {
             const match = line.match(/^OTHERWISE\s*(?::\s*)?(.*)/);
-            return ["OTHERWISE", match ? match[1].trim() : ""];
+            token = ["OTHERWISE", match ? match[1].trim() : ""];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^(\S+)\s*TO\s*(\S+)\s*:\s*/.test(line)) {
             const match = line.match(/^(.*?)\s*TO\s*(.*?)\s*:\s*(.*)/);
-            return ["RANGECASE", match[1].trim(), match[2].trim(), match[3].trim()];
+            token = ["RANGECASE", match[1].trim(), match[2].trim(), match[3].trim()];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^\S+\s*:\s*/.test(line)) {
             const match = line.match(/^(.*?)\s*:\s*(.*)/);
-            return ["CASEVALUE", match[1].trim(), match[2].trim()];
+            token = ["CASEVALUE", match[1].trim(), match[2].trim()];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line === "ENDCASE") {
-            return ["ENDCASE"];
+            token = ["ENDCASE"];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line === "REPEAT") {
-            return ["REPEAT"];
+            token = ["REPEAT"];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^UNTIL\s+(.*)$/.test(line)) {
             const match = line.match(/^UNTIL\s+(.*)$/);
-            return ["UNTIL", match[1]];
+            token = ["UNTIL", match[1]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^DECLARE\s+([\w\s,]+)\s+(?:OF|:)\s+(\w+)$/.test(line)) {
             const match = line.match(/^DECLARE\s+([\w\s,]+)\s+(?:OF|:)\s+(\w+)$/);
             if (match) {
-              const variables = match[1].split(',').map(v => v.trim());
-              const dataType = match[2];
-              return ["DECLAREVAR", variables, dataType];
+                const variables = match[1].split(',').map(v => v.trim());
+                const dataType = match[2];
+                token = ["DECLAREVAR", variables, dataType];
+                token[114514] = "Line " + lineNumber + ": " + line + "\n";
+                return token;
             }
             return null; // Or handle the error case appropriately
         } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
             const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
-            return ["DECLAREARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], match[4]];
+            token = ["DECLAREARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], match[4]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/.test(line)) {
             const match = line.match(/^DECLARE\s+(\w+)\s*:\s*ARRAY\s*\[\s*(\d+)\s*:\s*(\d+)\s*,\s*(\d+)\s*:\s*(\d+)\s*]\s*OF\s+(\w+)\s*$/);
-            return ["DECLARE2DARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], [parseInt(match[4], 10), parseInt(match[5], 10)], match[6]];
+            token = ["DECLARE2DARRAY", match[1], [parseInt(match[2], 10), parseInt(match[3], 10)], [parseInt(match[4], 10), parseInt(match[5], 10)], match[6]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line === "CONTINUE") {
-            return ["CONTINUE"];
+            token = ["CONTINUE"];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line === "BREAK") {
-            return ["BREAK"];
+            token = ["BREAK"];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line === "PASS") {
-            return ["PASS"];
+            token = ["PASS"];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^CONSTANT (.+?)\s*(<-|=|←) (.+)$/.test(line)) {
             const match = line.match(/^CONSTANT (.+?)\s*(<-|=|←) (.+)$/);
-            return ["CONSTANT", match[1], match[3]];
+            token = ["CONSTANT", match[1], match[3]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^(.+?)\s*(<-|=|←) (.+)$/.test(line)) {
             const match = line.match(/^(.+?)\s*(<-|=|←) (.+)$/);
-            return ["SET", match[1], match[3]];
+            token = ["SET", match[1], match[3]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^SET\s+(.+?)\s+TO\s+(.+)$/.test(line)) {
             const match = line.match(/^SET\s+(.+?)\s+TO\s+(.+)$/);
-            return ["SET", match[1], match[2]];
+            token = ["SET", match[1], match[2]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^PROCEDURE\s+(\w+)\((.*?)\)$/.exec(line)) {
             const match = /^PROCEDURE\s+(\w+)\((.*?)\)$/.exec(line);
             const procedureName = match[1];
@@ -224,13 +289,19 @@ class PseudoInterpreter {
                 return args;
             };
             const args = parseArguments(rawArgs);
-            return ["PROCEDUREDEF", procedureName, args];
+            token = ["PROCEDUREDEF", procedureName, args];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line === "ENDPROCEDURE") {
-            return ["ENDPROCEDURE"];
+            token = ["ENDPROCEDURE"];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^CALL\s+(\w+)\((.*)\)$/.test(line)) {
             const match = line.match(/^CALL\s+(\w+)\((.*)\)$/);
             const args = match[2] ? match[2].split(",").map(a => a.trim()) : [];
-            return ["CALLPROCEDURE", match[1], args];
+            token = ["CALLPROCEDURE", match[1], args];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^FUNCTION\s+(\w+)\((.*?)\)\s+RETURNS\s+(\w+)$/.test(line)) {
             const match = line.match(/^FUNCTION\s+(\w+)\((.*?)\)\s+RETURNS\s+(\w+)$/);
             const functionName = match[1];
@@ -244,35 +315,56 @@ class PseudoInterpreter {
                 });
             };
             const args = parseArguments(rawArgs);
-            return ["FUNCTIONDEF", functionName, args, returnType];
+            token = ["FUNCTIONDEF", functionName, args, returnType];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line === "ENDFUNCTION") {
-            return ["ENDFUNCTION"];
+            token = ["ENDFUNCTION"];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^RETURN\s+(.*)$/.test(line)) {
             const match = line.match(/^RETURN\s+(.*)$/);
-            return ["RETURN", match[1]];
+            token = ["RETURN", match[1]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else  if (line.startsWith("TYPE")) {
             const match = line.match(/^TYPE\s+(.*)$/);
-            return ["TYPEDEF", match[1]];
+            token = ["TYPEDEF", match[1]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (line === "ENDTYPE") {
-            return ["ENDTYPE"];
+            token = ["ENDTYPE"];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^OPENFILE\s+(.*?)\s+FOR\s+(.*)$/.test(line)) {
             const match = line.match(/^OPENFILE\s+(.*?)\s+FOR\s+(.*)$/);
-            return ["OPENFILE", match[1], match[2]];
+            token = ["OPENFILE", match[1], match[2]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^READFILE\s+(.*?),\s*(.*)$/.test(line)) {
             const match = line.match(/^READFILE\s+(.*?),\s*(.*)$/);
-            return ["READFILE", match[1], match[2]];
+            token = ["READFILE", match[1], match[2]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^WRITEFILE\s+(.*?),\s*(.*)$/.test(line)) {
             const match = line.match(/^WRITEFILE\s+(.*?),\s*(.*)$/);
-            return ["WRITEFILE", match[1], match[2]];
+            token = ["WRITEFILE", match[1], match[2]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^CLOSEFILE\s+(.*)$/.test(line)) {
             const match = line.match(/^CLOSEFILE\s+(.*)$/);
-            return ["CLOSEFILE", match[1]];
+            token = ["CLOSEFILE", match[1]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         } else if (/^DOWNLOAD\s+(.*)$/.test(line)) {
             const match = line.match(/^DOWNLOAD\s+(.*)$/);
-            return ["DOWNLOAD", match[1]];
+            token = ["DOWNLOAD", match[1]];
+            token[114514] = "Line " + lineNumber + ": " + line + "\n";
+            return token;
         }
 
-       throw new SyntaxError(`Unknown command: ${line}`);
+        let errorLine = "Line " + lineNumber + ": " + line + "\n";
+        throw new SyntaxError(`Unknown command:\n${errorLine}`);
     }
 
     // Utilities
@@ -488,7 +580,7 @@ class PseudoInterpreter {
 
     callFunction(funcName, args) {
         if (!this.functions[funcName]) {
-            throw new Error(`Function ${funcName} not defined.`);
+            throw new Error(`${this.currentTokenLine}Function ${funcName} not defined.`);
         }
     
         const funcDef = this.functions[funcName];
@@ -497,7 +589,7 @@ class PseudoInterpreter {
     
         // Ensure the correct number of arguments
         if (funcParams.length !== args.length) {
-            throw new Error(`Expected ${funcParams.length} arguments, got ${args.length}.`);
+            throw new Error(`${this.currentTokenLine}Expected ${funcParams.length} arguments, got ${args.length}.`);
         }
         
         let storedArgs = {};
@@ -523,7 +615,7 @@ class PseudoInterpreter {
     }
 
     callProcedure(procName, args) {
-        if (!this.procedures[procName]) throw new Error(`Procedure ${procName} not defined.`);
+        if (!this.procedures[procName]) throw new Error(`${this.currentTokenLine}Procedure ${procName} not defined.`);
         
         const procDef = this.procedures[procName];
         const procParams = procDef["defParams"];
@@ -531,7 +623,7 @@ class PseudoInterpreter {
 
         // Ensure the correct number of arguments
         if (procParams.length !== args.length) {
-            throw new Error(`Expected ${procParams.length} arguments, got ${args.length}.`);
+            throw new Error(`${this.currentTokenLine}Expected ${procParams.length} arguments, got ${args.length}.`);
         }
 
         let storedArgs = {};
@@ -627,7 +719,7 @@ class PseudoInterpreter {
                 else if (this.isValidStringExpression(String(this.evalExpression(argExpr.trim())))) result = parseFloat(this.removeQuotes(this.evalExpression(argExpr.trim())));
                 else result = parseFloat(this.evalExpression(argExpr.trim()));
             } catch {
-                throw new Error(`Invalid expression: ${argExpr}`);
+                throw new Error(`${this.currentTokenLine}Invalid expression: ${argExpr}`);
             }
             expr = expr.substring(0, start - 3) + result + expr.substring(end + 1);
         }
@@ -666,12 +758,24 @@ class PseudoInterpreter {
     
     evalExpression(expr) {
         expr = String(expr);
+        let topFlag = false;
+
+        if (this.currentExpression === undefined) {
+            topFlag = true;
+            this.currentExpression = expr;
+        }
 
         // Handle strings and file names
-        if (this.isValidStringExpression(expr) || expr.endsWith('.txt')) return expr;
+        if (this.isValidStringExpression(expr) || expr.endsWith('.txt')) {
+            if (topFlag) this.currentExpression = undefined;
+            return expr;
+        }
 
         // Handle references
-        if (expr.startsWith('^')) return expr.substring(1);
+        if (expr.startsWith('^')) {
+            if (topFlag) this.currentExpression = undefined;
+            return expr.substring(1);
+        }
 
         // Replace variables, constants and array references in the expression with their values
         while (expr !== this.replaceReferences(expr))  expr = this.replaceReferences(expr);
@@ -846,15 +950,27 @@ class PseudoInterpreter {
         }        
 
         // Handle strings
-        if (this.isValidStringExpression(expr)) return expr;
+        if (this.isValidStringExpression(expr)) {
+            if (topFlag) this.currentExpression = undefined;
+            return expr;
+        }
 
         try {
-            if (expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') return expr.toUpperCase() === 'TRUE' ? true : false;
+            if (expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') {
+                if (topFlag) this.currentExpression = undefined;
+                return expr.toUpperCase() === 'TRUE' ? true : false;
+            }
             expr = eval(expr);
-            if (!isNaN(expr) && !isNaN(Number(expr)) || expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') return expr;
-            else return `"${expr}"`;
+            if (!isNaN(expr) && !isNaN(Number(expr)) || expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') {
+                if (topFlag) this.currentExpression = undefined;
+                return expr;
+            }
+            else {
+                if (topFlag) this.currentExpression = undefined;
+                return `"${expr}"`;
+            }
         } catch {
-            throw new Error(`Invalid expression: ${expr}`);
+            throw new Error(`${this.currentTokenLine}Invalid expression: ${this.currentExpression}`);
         }
     }
 
@@ -883,7 +999,7 @@ class PseudoInterpreter {
 
             if (line === "") continue;
 
-            let parsedLine = this.tokenize(line);
+            let parsedLine = this.tokenize(line,i + 1);
 
             // Preprocess ELSE IF into ELSE and IF
             if (parsedLine[0] === "ELSE IF") {
@@ -994,6 +1110,7 @@ class PseudoInterpreter {
 
         while (i < parsedCode.length) {
             const token = parsedCode[i];
+            this.currentTokenLine = token[114514];
             let reference;
 
             switch (token[0]) {
@@ -1002,6 +1119,7 @@ class PseudoInterpreter {
                     
                 case "POPUP":
                     this.popup = this.evalExpression(token[1]);
+                    console.log(token[114514]);
                     break;
 
                 case "PASS":
@@ -1019,14 +1137,14 @@ class PseudoInterpreter {
                         } else {
                             if (this.constants[reference[0]] === undefined) {
                                 this.variables[reference[0]] = val;
-                            } else throw new SyntaxError(`Cannot overwrite constant: ${reference[0]}`);
+                            } else throw new SyntaxError(`${this.currentTokenLine}Cannot overwrite constant: ${reference[0]}`);
                         }
                     } else if (reference[0] === "1DARRAY") {
                         this.arrays[reference[1]][reference[2]] = val;
                     } else if (reference[0] === "2DARRAY") {
                         this.arrays[reference[1]][reference[2]][reference[3]] = val;
                     } else if (reference[0] === "OBJECTATTRIBUTE") {
-                        if (this.variables[reference[1]][reference[2]] === undefined) throw new SyntaxError(`Undefined attribute: ${reference[2]}`);
+                        if (this.variables[reference[1]][reference[2]] === undefined) throw new SyntaxError(`${this.currentTokenLine}Undefined attribute: ${reference[2]}`);
                         this.variables[reference[1]][reference[2]] = val;
                     }
                     break;
@@ -1573,7 +1691,7 @@ class PseudoInterpreter {
                     break;
 
                 default:
-                    throw new SyntaxError(`Unknown command: ${token[0]}`);
+                    throw new SyntaxError(`${this.currentTokenLine}Unknown command: ${token[0]}`);
             }
 
             i++;
