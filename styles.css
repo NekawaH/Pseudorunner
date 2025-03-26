@@ -12,17 +12,17 @@ body {
     display: flex;
     flex-direction: column;
     width: 80%;
-    position:relative;
-    left:-50px;
-    height:100vh;
+    position: relative;
+    left: -50px;
+    height: 100vh;
 }
 
 .container {
     display: flex;
     flex-direction: column;
-    position:relative;
-    left:0px;
-    top:-9px;
+    position: relative;
+    left: 0px;
+    top: -9px;
     width: 100%;
     height: 720px;
     max-width: 1200px;
@@ -47,18 +47,48 @@ h1 {
 
 .textboxes {
     display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
 .textbox {
-    width: 50%;
+    width: 100%;
     padding: 9px;
-    position:relative;
-    left:0px;
-    top:0px;
+    position: relative;
+    left: 0px;
+    top: 0px;
     border: none;
     outline: none;
     font-size: 16px;
     font-family: 'Courier New', Courier, monospace;
+    box-sizing: border-box;
+}
+
+.input-container {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+}
+
+.output-container {
+    display: flex;
+    height: 40%;
+    width: 100%;
+    overflow-y: auto;
+}
+
+.line-numbers {
+    background-color: #e3e6e8;
+    color: #6e7681;
+    font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
+    text-align: right;
+    position: relative;
+    height: 460px;
+    width: 25px;
+    line-height: 21px;
+    padding: 10px 5px 0px 0;
+    overflow-y: auto;
 }
 
 .input-box {
@@ -67,8 +97,10 @@ h1 {
     border: 1px solid #c6d0d8;
     border-radius: 8px;
     position: relative;
-    height: 610px;
-    left: -4px;
+    height: 460px;
+    width: 1161px;
+    left: 3px;
+    line-height: 21px;
     font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
 }
 
@@ -78,9 +110,10 @@ h1 {
     border: 1px solid #c6d0d8;
     border-radius: 8px;
     position: relative;
-    height: 610px;
+    height: 170px;
+    width: 1191px;
     left: 3px;
-    width: 50%;
+    line-height: 21px;
     font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
 }
 
