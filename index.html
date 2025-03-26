@@ -184,8 +184,13 @@ OUTPUT guquan.age">Custom Data Type</a></li>
     <div class="container">
         <h1>Pseudocode Interpreter</h1>
         <div class="textboxes">
-            <textarea id="inputBox" class="textbox input-box" rows="20" placeholder="Enter your pseudocode here..."></textarea>
-            <textarea id="outputBox" class="textbox output-box" rows="20" placeholder="Output will be displayed here..." readonly></textarea>
+            <div class="input-container">
+                <div class="line-numbers" id="lineNumbers"></div>
+                <textarea id="inputBox" class="textbox input-box" rows="20" placeholder="Enter your pseudocode here..." spellcheck="false"></textarea>
+            </div>
+            <div class="output-container">
+                <textarea id="outputBox" class="textbox output-box" rows="20" placeholder="Output will be displayed here..." readonly></textarea>
+            </div>
         </div>
     </div>
     <button class="execute" onclick="runPseudocode()">Run Pseudocode</button>
