@@ -979,7 +979,7 @@ class PseudoInterpreter {
     }
 
     parse(pseudocode) {
-        let lines = pseudocode.trim().split("\n");
+        let lines = pseudocode.split("\n");
         let parsedLines = [];
     
         for (let i = 0; i < lines.length; i++) {
