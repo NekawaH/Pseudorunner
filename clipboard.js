@@ -1,3 +1,4 @@
+// Clipboard
 function copyToClipboard(text) {
     if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text)
@@ -5,6 +6,7 @@ function copyToClipboard(text) {
                 console.log('Text copied to clipboard');
                 // alert('Text copied to clipboard: ' + "\n" + text);
                 document.getElementById('inputBox').value = text;
+                updateLineNumbers();
             })
             .catch(err => {
                 console.error('Failed to copy text: ', err);
@@ -23,6 +25,7 @@ function copyToClipboard(text) {
             console.log('Text copied to clipboard');
             // alert('Text copied to clipboard: '+ "\n" + text);
             document.getElementById('inputBox').value = text;
+            updateLineNumbers();
         } catch (err) {
             console.error('Failed to copy text: ', err);
         }
