@@ -15,40 +15,40 @@
     <ul id="mi" class="menu-items">
         <li><a class="payload" href="#" data-copy="DECLARE Values : ARRAY[1:100] OF INTEGER
 
-PROCEDURE SwapValue(BYREF x : REAL, y : REAL)
-    temp <- x
-    x <- y
-    y <- temp
+PROCEDURE SwapValue(BYREF X : REAL, Y : REAL)
+    Temp <- X
+    X <- Y
+    T <- Temp
 ENDPROCEDURE
 
-INPUT n
-FOR Index <- 1 TO n
+INPUT N
+FOR Index <- 1 TO N
     INPUT Values[Index]
 NEXT Index
-Last <- n
+Last <- N
 REPEAT
     Swap <- FALSE
         FOR Index <- 1 TO Last-1
-            IF Values[Index] > Values[Index+1] THEN
-                CALL SwapValue(Values[Index], Values[Index+1])
+            IF Values[Index] > Values[Index + 1] THEN
+                CALL SwapValue(Values[Index], Values[Index + 1])
                 Swap <- TRUE
             ENDIF
         NEXT Index
-        Last <- Last-1
-UNTIL NOT Swap OR Last==1
-FOR Index <- 1 TO n
+        Last <- Last - 1
+UNTIL NOT Swap OR Last = 1
+FOR Index <- 1 TO N
     OUTPUT Values[Index]
 NEXT Index">Bubble Sort</a></li>
 
         <li><a class="payload" href="#" data-copy="DECLARE Values : ARRAY[1:100] OF INTEGER
 
-PROCEDURE SwapValue(BYREF x : REAL, y : REAL)
-    temp <- x
-    x <- y
-    y <- temp
+PROCEDURE SwapValue(BYREF X : REAL, Y : REAL)
+    Temp <- X
+    X <- Y
+    T <- Temp
 ENDPROCEDURE
 
-PROCEDURE QuickSort(BYVAL Left:INTEGER, Right:INTEGER)
+PROCEDURE QuickSort(Left:INTEGER, Right:INTEGER)
     IF Left < Right THEN
         PivotPos <- Partition(Left, Right)
         CALL QuickSort(Left, PivotPos - 1)
@@ -81,27 +81,25 @@ FOR Index <- 1 TO N
 NEXT Index">Quicksort</a></li>    
 
         <li><a class="payload" href="#" data-copy="DECLARE Values : ARRAY[1:100] OF INTEGER
-INPUT n
-FOR Index <- 1 TO n
+INPUT N
+FOR Index <- 1 TO N
     INPUT Values[Index]
 NEXT Index
-INPUT x
-flag <- FALSE
+INPUT X
+Flag <- FALSE
 Index <- 0
 REPEAT
-    Index <- Index+1
-    IF Values[Index]==x THEN
-        OUTPUT &quot;Position: &quot;, Index
-        flag <- TRUE
+    Index <- Index + 1
+    IF Values[Index] = X THEN
+        OUTPUT &quot;Position: &quot;, Indexxsx
+        Flag <- TRUE
     ENDIF
-UNTIL Index==n OR flag
-IF flag==FALSE THEN
+UNTIL Index = N OR Flag
+IF NOT Flag THEN
     OUTPUT &quot;Not found&quot;
 ENDIF">Linear Search</a></li>
 
-        <li><a class="payload" href="#" data-copy="INPUT n
-
-FUNCTION F(X:INTEGER) RETURNS INTEGER
+        <li><a class="payload" href="#" data-copy="FUNCTION F(X:INTEGER) RETURNS INTEGER
     IF X = 0 THEN
         RETURN 1
     ELSE
@@ -109,20 +107,21 @@ FUNCTION F(X:INTEGER) RETURNS INTEGER
     ENDIF
 ENDFUNCTION
 
-OUTPUT F(n)">Factorial</a></li>
+INPUT N
+OUTPUT F(N)">Factorial</a></li>
 
         <li><a class="payload" href="#" data-copy="DECLARE Number : ARRAY[1:100] OF INTEGER
-INPUT n
-FOR Index <- 1 TO n
+INPUT N
+FOR Index <- 1 TO N
     INPUT Number[Index]
 NEXT Index
 
 Total <- 0
-FOR Count <- 1 TO n
-    Total <- Total+Number[Count]
+FOR Count <- 1 TO N
+    Total <- Total + Number[Count]
 NEXT Count
 
-Average <- Total/n
+Average <- Total / N
 OUTPUT Total
 OUTPUT Average">Sum and Average</a></li>
 
@@ -145,13 +144,13 @@ FOR Out <- 1 TO N
     OUTPUT &quot;The city &quot;, City[Out, 1], &quot; is in &quot;, City[Out, 2]
 NEXT Out">Cities and Countries</a></li>
 
-        <li><a class="payload" href="#" data-copy="PROCEDURE PrintFile(file:STRING)
-    OPENFILE file FOR READ
-    WHILE NOT EOF(file) DO
-        READFILE file, Line
+        <li><a class="payload" href="#" data-copy="PROCEDURE PrintFile(File:STRING)
+    OPENFILE File FOR READ
+    WHILE NOT EOF(File) DO
+        READFILE File, Line
         OUTPUT Line
     ENDWHILE
-    CLOSEFILE file
+    CLOSEFILE File
 ENDPROCEDURE
 
 OPENFILE &quot;File.txt&quot; FOR WRITE
