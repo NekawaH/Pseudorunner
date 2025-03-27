@@ -176,6 +176,58 @@ guquan.age <- 16
 OUTPUT guquan.name
 OUTPUT guquan.age">Custom Data Type</a></li>
 
+        <li><a class="payload" href="#" data-copy="POPUP TRUE
+OUTPUT &quot;(请输入：阿诺头顶怎么尖尖的)&quot;
+REPEAT
+    INPUT Query
+UNTIL Query = &quot;阿诺头顶怎么尖尖的&quot;
+
+OUTPUT &quot;那我问你&quot;
+OUTPUT &quot;你是男的女的 (请输入：男的 或 女的)&quot;
+
+REPEAT
+    INPUT Sex
+UNTIL Sex = &quot;男的&quot; OR Sex = &quot;女的&quot;
+
+IF Sex = &quot;女的&quot; THEN
+    OUTPUT &quot;如果你是女的你说这样的话啊&quot;
+    OUTPUT &quot;那我问你 你 你 你是女孩子&quot;
+    OUTPUT &quot;那我问你&quot;
+    OUTPUT &quot;那那你那你头顶是不是 是不是尖尖的 (请输入：是 或 不是)&quot;
+    REPEAT
+        INPUT IsSharp
+    UNTIL IsSharp = &quot;是&quot; OR IsSharp = &quot;不是&quot;
+    OUTPUT &quot;那我 那我问你&quot;
+    OUTPUT &quot;你头顶是尖的呢&quot;
+    OUTPUT &quot;还是秃顶的啊&quot;
+    OUTPUT &quot;还是染黄色染红色的那问你啊&quot;
+    OUTPUT &quot;还是戴假发的&quot;
+    OUTPUT &quot;(请输入：尖的 或 秃顶 或 红色 或 黄色 或 假发)&quot;
+    REPEAT
+        INPUT HairType
+    UNTIL HairType = &quot;尖的&quot; OR HairType = &quot;秃顶&quot; OR HairType = &quot;红色&quot; OR HairType = &quot;黄色&quot; OR HairType = &quot;假发&quot;
+ELSE
+    OUTPUT &quot;如果是 如果是你是男的&quot;
+    OUTPUT &quot;那我问你啊&quot;
+    OUTPUT &quot;你说我的头是尖的&quot;
+    OUTPUT &quot;那我问你 那你是不是秃头&quot;
+    OUTPUT &quot;那你是不是光头啊&quot;
+    OUTPUT &quot;你是光头的还是有头发的 (请输入： 光头 或 有头发)&quot;
+    REPEAT
+        INPUT HairType
+    UNTIL HairType = &quot;光头&quot; OR HairType = &quot;有头发&quot;
+ENDIF
+
+OUTPUT &quot;那问你&quot;
+OUTPUT &quot;我头顶我我尖怎么了我就尖怎么了&quot;
+OUTPUT &quot;哎我就尖怎么了&quot;
+OUTPUT &quot;我就头顶尖怎么了&quot;
+OUTPUT &quot;哎我头顶尖你难道你看不惯吗&quot;
+OUTPUT &quot;啊我头顶就是尖的&quot;
+OUTPUT &quot;怎么了 我就是尖&quot;
+OUTPUT &quot;我就是要尖怎么了&quot;
+OUTPUT &quot;你看不惯吗&quot;">常熟阿诺</a></li>
+
     </ul>
 </div>
 
