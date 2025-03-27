@@ -13,7 +13,7 @@ class PseudoInterpreter {
         this.types = {};
         this.classes = {};
         // Misc.
-        this.currentTokenLine = '';
+        this.tokenStack = '';
         this.currentExpression = undefined;
         this.ifCountTracker = 0;
         this.elseIfTracker = [];
@@ -584,7 +584,7 @@ class PseudoInterpreter {
 
     callFunction(funcName, args) {
         if (!this.functions[funcName]) {
-            throw new Error(`${this.currentTokenLine}Function ${funcName} not defined.`);
+            throw new Error(`${this.tokenStack}Function ${funcName} not defined.`);
         }
     
         const funcDef = this.functions[funcName];
@@ -593,7 +593,7 @@ class PseudoInterpreter {
     
         // Ensure the correct number of arguments
         if (funcParams.length !== args.length) {
-            throw new Error(`${this.currentTokenLine}Expected ${funcParams.length} arguments, got ${args.length}.`);
+            throw new Error(`${this.tokenStack}Expected ${funcParams.length} arguments, got ${args.length}.`);
         }
         
         let storedArgs = {};
@@ -607,6 +607,7 @@ class PseudoInterpreter {
         this.globalReturnValue = null;
     
         // Execute function body
+
         this.execute(funcBody);
 
         // Save return value
@@ -619,7 +620,7 @@ class PseudoInterpreter {
     }
 
     callProcedure(procName, args) {
-        if (!this.procedures[procName]) throw new Error(`${this.currentTokenLine}Procedure ${procName} not defined.`);
+        if (!this.procedures[procName]) throw new Error(`${this.tokenStack}Procedure ${procName} not defined.`);
         
         const procDef = this.procedures[procName];
         const procParams = procDef["defParams"];
@@ -627,7 +628,7 @@ class PseudoInterpreter {
 
         // Ensure the correct number of arguments
         if (procParams.length !== args.length) {
-            throw new Error(`${this.currentTokenLine}Expected ${procParams.length} arguments, got ${args.length}.`);
+            throw new Error(`${this.tokenStack}Expected ${procParams.length} arguments, got ${args.length}.`);
         }
 
         let storedArgs = {};
@@ -723,7 +724,7 @@ class PseudoInterpreter {
                 else if (this.isValidStringExpression(String(this.evalExpression(argExpr.trim())))) result = parseFloat(this.removeQuotes(this.evalExpression(argExpr.trim())));
                 else result = parseFloat(this.evalExpression(argExpr.trim()));
             } catch {
-                throw new Error(`${this.currentTokenLine}Invalid expression: ${argExpr}`);
+                throw new Error(`${this.tokenStack}Invalid expression: ${argExpr}`);
             }
             expr = expr.substring(0, start - 3) + result + expr.substring(end + 1);
         }
@@ -758,6 +759,11 @@ class PseudoInterpreter {
         }
     
         return expr;
+    }
+
+    removeLastLine(str) {
+        const lines = str.split('\n');
+        return lines.slice(0, -2).join('\n');
     }
     
     evalExpression(expr) {
@@ -974,7 +980,7 @@ class PseudoInterpreter {
                 return `"${expr}"`;
             }
         } catch {
-            throw new Error(`${this.currentTokenLine}Invalid expression: ${this.currentExpression}`);
+            throw new Error(`${this.tokenStack}Invalid expression: ${this.currentExpression}`);
         }
     }
 
@@ -1112,7 +1118,7 @@ class PseudoInterpreter {
 
         while (i < parsedCode.length) {
             const token = parsedCode[i];
-            this.currentTokenLine = token[114514];
+            this.tokenStack = this.tokenStack + token[114514];
             let reference;
 
             switch (token[0]) {
@@ -1142,14 +1148,14 @@ class PseudoInterpreter {
                         } else {
                             if (this.constants[reference[0]] === undefined) {
                                 this.variables[reference[0]] = val;
-                            } else throw new SyntaxError(`${this.currentTokenLine}Cannot overwrite constant: ${reference[0]}`);
+                            } else throw new SyntaxError(`${this.tokenStack}Cannot overwrite constant: ${reference[0]}`);
                         }
                     } else if (reference[0] === "1DARRAY") {
                         this.arrays[reference[1]][reference[2]] = val;
                     } else if (reference[0] === "2DARRAY") {
                         this.arrays[reference[1]][reference[2]][reference[3]] = val;
                     } else if (reference[0] === "OBJECTATTRIBUTE") {
-                        if (this.variables[reference[1]][reference[2]] === undefined) throw new SyntaxError(`${this.currentTokenLine}Undefined attribute: ${reference[2]}`);
+                        if (this.variables[reference[1]][reference[2]] === undefined) throw new SyntaxError(`${this.tokenStack}Undefined attribute: ${reference[2]}`);
                         this.variables[reference[1]][reference[2]] = val;
                     }
                     break;
@@ -1694,10 +1700,11 @@ class PseudoInterpreter {
                     break;
 
                 default:
-                    throw new SyntaxError(`${this.currentTokenLine}Unknown command: ${token[0]}`);
+                    throw new SyntaxError(`${this.tokenStack}Unknown command: ${token[0]}`);
             }
 
             i++;
+            this.tokenStack = this.removeLastLine(this.tokenStack);
         }
     }
 }
