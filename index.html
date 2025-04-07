@@ -1,13 +1,272 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Website Title</title>
-    <script>
-        window.onload = function() {
-            while (true) window.open('https://nekawah.github.io/Pseudorunner/', '_blank');
-        };
-    </script>
+    <title>Pseudocode Interpreter</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
+
+<body>
+
+<div class="menu-container">
+    <button id="clicker" onclick="cl()" class="menu-toggle">Example Code</button>
+    <ul id="mi" class="menu-items">
+        <li><a class="payload" href="#" data-copy="DECLARE Values : ARRAY[1:100] OF INTEGER
+
+PROCEDURE SwapValue(BYREF X : REAL, Y : REAL)
+    Temp <- X
+    X <- Y
+    T <- Temp
+ENDPROCEDURE
+
+INPUT N
+FOR Index <- 1 TO N
+    INPUT Values[Index]
+NEXT Index
+Last <- N
+REPEAT
+    Swap <- FALSE
+        FOR Index <- 1 TO Last - 1
+            IF Values[Index] > Values[Index + 1] THEN
+                CALL SwapValue(Values[Index], Values[Index + 1])
+                Swap <- TRUE
+            ENDIF
+        NEXT Index
+        Last <- Last - 1
+UNTIL NOT Swap OR Last = 1
+FOR Index <- 1 TO N
+    OUTPUT Values[Index]
+NEXT Index">Bubble Sort</a></li>
+
+        <li><a class="payload" href="#" data-copy="DECLARE Values : ARRAY[1:100] OF INTEGER
+
+PROCEDURE SwapValue(BYREF X : REAL, Y : REAL)
+    Temp <- X
+    X <- Y
+    T <- Temp
+ENDPROCEDURE
+
+PROCEDURE QuickSort(Left:INTEGER, Right:INTEGER)
+    IF Left < Right THEN
+        PivotPos <- Partition(Left, Right)
+        CALL QuickSort(Left, PivotPos - 1)
+        CALL QuickSort(PivotPos + 1, Right)
+    ENDIF
+ENDPROCEDURE
+
+FUNCTION Partition(Left:INTEGER, Right:INTEGER) RETURNS INTEGER
+    Pivot <- Values[Right]
+    i <- Left - 1
+    FOR j <- Left TO Right - 1
+        IF Values[j] <= Pivot THEN
+            i <- i + 1
+            CALL SwapValue(Values[i], Values[j])
+        ENDIF
+    NEXT j
+    CALL SwapValue(Values[i + 1], Values[Right])
+    RETURN i + 1
+ENDFUNCTION
+
+INPUT N
+FOR Index <- 1 TO N
+    INPUT Values[Index]
+NEXT Index
+
+CALL QuickSort(1, N)
+
+FOR Index <- 1 TO N
+    OUTPUT Values[Index]
+NEXT Index">Quicksort</a></li>    
+
+        <li><a class="payload" href="#" data-copy="DECLARE Values : ARRAY[1:100] OF INTEGER
+INPUT N
+FOR Index <- 1 TO N
+    INPUT Values[Index]
+NEXT Index
+INPUT X
+Flag <- FALSE
+Index <- 0
+REPEAT
+    Index <- Index + 1
+    IF Values[Index] = X THEN
+        OUTPUT &quot;Position: &quot;, Indexxsx
+        Flag <- TRUE
+    ENDIF
+UNTIL Index = N OR Flag
+IF NOT Flag THEN
+    OUTPUT &quot;Not found&quot;
+ENDIF">Linear Search</a></li>
+
+        <li><a class="payload" href="#" data-copy="FUNCTION F(X:INTEGER) RETURNS INTEGER
+    IF X = 0 THEN
+        RETURN 1
+    ELSE
+        RETURN X * F(X-1)
+    ENDIF
+ENDFUNCTION
+
+INPUT N
+OUTPUT F(N)">Factorial</a></li>
+
+        <li><a class="payload" href="#" data-copy="DECLARE Number : ARRAY[1:100] OF INTEGER
+INPUT N
+FOR Index <- 1 TO N
+    INPUT Number[Index]
+NEXT Index
+
+Total <- 0
+FOR Count <- 1 TO N
+    Total <- Total + Number[Count]
+NEXT Count
+
+Average <- Total / N
+OUTPUT Total
+OUTPUT Average">Sum and Average</a></li>
+
+        <li><a class="payload" href="#" data-copy="POPUP TRUE
+DECLARE City : ARRAY[1:100, 1:2] OF STRING
+DECLARE Count : INTEGER
+DECLARE Out : INTEGER
+Count <- 1
+N <- 5
+
+REPEAT
+    OUTPUT &quot;Enter the name of the city&quot;
+    INPUT City[Count, 1]
+    OUTPUT &quot;Enter the name of the country&quot;
+    INPUT City[Count, 2]
+    Count <- Count + 1
+UNTIL Count > N
+
+FOR Out <- 1 TO N
+    OUTPUT &quot;The city &quot;, City[Out, 1], &quot; is in &quot;, City[Out, 2]
+NEXT Out">Cities and Countries</a></li>
+
+        <li><a class="payload" href="#" data-copy="PROCEDURE PrintFile(File:STRING)
+    OPENFILE File FOR READ
+    WHILE NOT EOF(File) DO
+        READFILE File, Line
+        OUTPUT Line
+    ENDWHILE
+    CLOSEFILE File
+ENDPROCEDURE
+
+OPENFILE &quot;File.txt&quot; FOR WRITE
+WRITEFILE &quot;File.txt&quot;, &quot;hello world&quot;
+WRITEFILE &quot;File.txt&quot;, &quot;lets learn pseudocode&quot;
+CLOSEFILE &quot;File.txt&quot;
+
+OPENFILE &quot;File.txt&quot; FOR APPEND
+WRITEFILE &quot;File.txt&quot;, &quot;new line&quot;
+WRITEFILE &quot;File.txt&quot;, &quot;another line&quot;
+CLOSEFILE &quot;File.txt&quot;
+
+CALL PrintFile(&quot;File.txt&quot;)">File Handling</a></li>
+
+        <li><a class="payload" href="#" data-copy="TYPE person
+    DECLARE name : STRING
+    DECLARE age : INTEGER
+ENDTYPE
+
+DECLARE guquan : person
+guquan.name <- &quot;Andy Gu&quot;
+guquan.age <- 16
+OUTPUT guquan.name
+OUTPUT guquan.age">Custom Data Type</a></li>
+
+        <li><a class="payload" href="#" data-copy="POPUP TRUE
+OUTPUT &quot;(请输入：阿诺头顶怎么尖尖的)&quot;
+REPEAT
+    INPUT Query
+UNTIL Query = &quot;阿诺头顶怎么尖尖的&quot;
+
+OUTPUT &quot;那我问你&quot;
+OUTPUT &quot;你是男的女的 (请输入：男的 或 女的)&quot;
+
+REPEAT
+    INPUT Sex
+UNTIL Sex = &quot;男的&quot; OR Sex = &quot;女的&quot;
+
+IF Sex = &quot;女的&quot; THEN
+    OUTPUT &quot;如果你是女的你说这样的话啊&quot;
+    OUTPUT &quot;那我问你 你 你 你是女孩子&quot;
+    OUTPUT &quot;那我问你&quot;
+    OUTPUT &quot;那那你那你头顶是不是 是不是尖尖的 (请输入：是 或 不是)&quot;
+    REPEAT
+        INPUT IsSharp
+    UNTIL IsSharp = &quot;是&quot; OR IsSharp = &quot;不是&quot;
+    OUTPUT &quot;那我 那我问你&quot;
+    OUTPUT &quot;你头顶是尖的呢&quot;
+    OUTPUT &quot;还是秃顶的啊&quot;
+    OUTPUT &quot;还是染黄色染红色的那问你啊&quot;
+    OUTPUT &quot;还是戴假发的&quot;
+    OUTPUT &quot;(请输入：尖的 或 秃顶 或 红色 或 黄色 或 假发)&quot;
+    REPEAT
+        INPUT HairType
+    UNTIL HairType = &quot;尖的&quot; OR HairType = &quot;秃顶&quot; OR HairType = &quot;红色&quot; OR HairType = &quot;黄色&quot; OR HairType = &quot;假发&quot;
+ELSE
+    OUTPUT &quot;如果是 如果是你是男的&quot;
+    OUTPUT &quot;那我问你啊&quot;
+    OUTPUT &quot;你说我的头是尖的&quot;
+    OUTPUT &quot;那我问你 那你是不是秃头&quot;
+    OUTPUT &quot;那你是不是光头啊&quot;
+    OUTPUT &quot;你是光头的还是有头发的 (请输入：光头 或 有头发)&quot;
+    REPEAT
+        INPUT HairType
+    UNTIL HairType = &quot;光头&quot; OR HairType = &quot;有头发&quot;
+ENDIF
+
+OUTPUT &quot;那问你&quot;
+OUTPUT &quot;我头顶我我尖怎么了我就尖怎么了&quot;
+OUTPUT &quot;哎我就尖怎么了&quot;
+OUTPUT &quot;我就头顶尖怎么了&quot;
+OUTPUT &quot;哎我头顶尖你难道你看不惯吗&quot;
+OUTPUT &quot;啊我头顶就是尖的&quot;
+OUTPUT &quot;怎么了 我就是尖&quot;
+OUTPUT &quot;我就是要尖怎么了&quot;
+OUTPUT &quot;你看不惯吗&quot;
+BOMB">常熟阿诺</a></li>
+
+    </ul>
+</div>
+
+<div id = "main-container" class="main-container">
+    <div class="container">
+        <h1>Pseudocode Interpreter</h1>
+        <div class="textboxes">
+            <div class="input-container">
+                <div class="line-numbers" id="lineNumbers"></div>
+                <textarea id="inputBox" class="textbox input-box" rows="20" placeholder="Enter your pseudocode here..." spellcheck="false"></textarea>
+            </div>
+            <div class="output-container">
+                <textarea id="outputBox" class="textbox output-box" rows="20" placeholder="Output will be displayed here..." readonly></textarea>
+            </div>
+        </div>
+    </div>
+    <button class="execute" onclick="runPseudocode()">Run Pseudocode</button>
+    <div class="copyright">
+        &copy; 2025 
+        <a href="https://github.com/NekawaH" target="_blank">
+            NekawaH
+        </a> &
+        <a href="https://github.com/inkalbert" target="_blank">
+            inkalbert
+        </a>
+        <a href="https://github.com/NekawaH/Pseudorunner" target="_blank">
+            <ion-icon name="logo-github"></ion-icon>
+        </a>
+    </div>
+</div>
+
+<script src="clipboard.js"></script>
+<script src="indentation.js"></script>
+<script src="interpreter.js"></script>
+<script src="list.js"></script>
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+</body>
+
 </html>
