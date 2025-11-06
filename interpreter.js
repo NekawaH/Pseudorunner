@@ -34,7 +34,7 @@ class PseudoInterpreter {
         return hash.toString();
     }
 
-    tokenize(line,lineNumber) {
+    tokenize(line, lineNumber) {
         let token;
         if (line.startsWith("BOMB")) {
             token = ["BOMB"]
@@ -1009,7 +1009,7 @@ class PseudoInterpreter {
 
             if (line === "") continue;
 
-            let parsedLine = this.tokenize(line,i + 1);
+            let parsedLine = this.tokenize(line, i + 1);
 
             // Preprocess ELSE IF into ELSE and IF
             if (parsedLine[0] === "ELSE IF") {
@@ -1035,7 +1035,7 @@ class PseudoInterpreter {
                 // Process subsequent CASE lines until we hit ENDCASE
                 while (++i < lines.length) {
                     let caseLine = lines[i].trim();
-                    let caseParsed = this.tokenize(caseLine);
+                    let caseParsed = this.tokenize(caseLine, i + 1);
                     if (caseParsed[0] === "CASEVALUE") {
                         caseLines.push(caseParsed); // Store individual case actions
                         continue;
@@ -1054,19 +1054,29 @@ class PseudoInterpreter {
                 
                 let caseCount = 0;
                 let elseFlag = false;
+                let ifLine = [];
+                let inLine = [];
                 // Generate IF-ELSE structure from cases
                 for (let caseLine of caseLines) {
                     caseCount++;
                     if (caseLine[0] === "RANGECASE") {
                         if (elseFlag) parsedLines.push(["ELSE"]);
                         else elseFlag = true;
-                        parsedLines.push(["IF", `${caseExpression} <= ${caseLine[2]} && ${caseExpression} >= ${caseLine[1]}`]); 
-                        if (caseLine[3].toString().trim()) parsedLines.push(this.tokenize(caseLine[3].toString().trim())); 
+                        ifLine = ["IF", `${caseExpression} <= ${caseLine[2]} && ${caseExpression} >= ${caseLine[1]}`];
+                        ifLine[114514] = caseLine[114514];
+                        parsedLines.push(ifLine); 
+                        inLine = this.tokenize(caseLine[3].toString().trim());
+                        inLine[114514] = caseLine[114514];
+                        if (caseLine[3].toString().trim()) parsedLines.push(inLine); 
                     } else if (caseLine[0] === "CASEVALUE") { 
                         if (elseFlag) parsedLines.push(["ELSE"]);
                         else elseFlag = true;
-                        parsedLines.push(["IF", `${caseExpression} == ${caseLine[1]}`]);
-                        if (caseLine[2].toString().trim()) parsedLines.push(this.tokenize(caseLine[2].toString().trim())); 
+                        ifLine = ["IF", `${caseExpression} == ${caseLine[1]}`];
+                        ifLine[114514] = caseLine[114514];
+                        parsedLines.push(ifLine);
+                        inLine = this.tokenize(caseLine[3].toString().trim());
+                        inLine[114514] = caseLine[114514];
+                        if (caseLine[3].toString().trim()) parsedLines.push(inLine); 
                     } else {
                         parsedLines.push(caseLine); 
                     }
