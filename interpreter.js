@@ -788,7 +788,7 @@ class PseudoInterpreter {
         }
 
         // Replace variables, constants and array references in the expression with their values
-        while (expr !== this.replaceReferences(expr))  expr = this.replaceReferences(expr);
+        while (expr !== this.replaceReferences(expr)) expr = this.replaceReferences(expr);
 
         // Detect user-defined function calls using regex (e.g., myFunc(arg1, arg2)), excluding those in quotes
         const userFuncRegex = /(?:'([^']*)'|"([^"]*)")|([A-Za-z_]\w*)\(([^()]*)\)/g;
@@ -947,7 +947,7 @@ class PseudoInterpreter {
         // Handle STR function
         while (expr.includes("STR(")) {
             expr = this.replaceSTR(expr);
-        }  
+        }
 
         // Handle NUM function
         while (expr.includes("NUM(")) {
@@ -957,7 +957,7 @@ class PseudoInterpreter {
         // Handle BOOL function
         while (expr.includes("BOOL(")) {
             expr = this.replaceBOOL(expr);
-        }        
+        }
 
         // Handle strings
         if (this.isValidStringExpression(expr)) {
@@ -965,20 +965,21 @@ class PseudoInterpreter {
             return expr;
         }
 
+        let isString = false;
+
         try {
             if (expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') {
-                if (topFlag) this.currentExpression = undefined;
+                if (topFlag) this.currentExpression = undefined; 
                 return expr.toUpperCase() === 'TRUE' ? true : false;
             }
+            if (expr.includes("'") || expr.includes('"')) isString = true;
             expr = eval(expr);
-            if (!isNaN(expr) && !isNaN(Number(expr)) || expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') {
+            if (!isString && !isNaN(expr) && !isNaN(Number(expr)) || expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') {
                 if (topFlag) this.currentExpression = undefined;
                 return expr;
             }
-            else {
-                if (topFlag) this.currentExpression = undefined;
-                return `"${expr}"`;
-            }
+            if (topFlag) this.currentExpression = undefined;
+            return `"${expr}"`;
         } catch {
             throw new Error(`${this.tokenStack}Invalid expression: ${this.currentExpression}`);
         }
@@ -1030,7 +1031,7 @@ class PseudoInterpreter {
             if (parsedLine[0] === "CASE") {
                 const caseExpression = parsedLine[1];
                 let caseLines = [];
-                let otherwiseLine = null;
+                let otherwise = null;
 
                 // Process subsequent CASE lines until we hit ENDCASE
                 while (++i < lines.length) {
@@ -1043,7 +1044,7 @@ class PseudoInterpreter {
                         caseLines.push(caseParsed); // Store range case actions
                         continue;
                     } else if (caseParsed[0] === "OTHERWISE") {
-                        otherwiseLine = caseParsed; 
+                        otherwise = caseParsed; 
                         continue;
                     } else if (caseParsed[0] === "ENDCASE") {
                         break; 
@@ -1056,6 +1057,7 @@ class PseudoInterpreter {
                 let elseFlag = false;
                 let ifLine = [];
                 let inLine = [];
+                let otherwiseLine = [];
                 // Generate IF-ELSE structure from cases
                 for (let caseLine of caseLines) {
                     caseCount++;
@@ -1084,7 +1086,11 @@ class PseudoInterpreter {
                 parsedLines.push(["ELSE"]); 
 
                 // Handle OTHERWISE action
-                if (otherwiseLine) parsedLines.push(this.tokenize(otherwiseLine[1].toString().trim())); 
+                if (otherwise) {
+                    otherwiseLine = this.tokenize(otherwise[1].toString().trim());
+                    otherwiseLine[114514] = otherwise[114514];
+                    parsedLines.push(otherwiseLine);
+                }
                 
                 for (let j = 0; j < caseCount; j++) parsedLines.push(["ENDIF"]);
             }
