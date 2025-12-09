@@ -974,7 +974,7 @@ class PseudoInterpreter {
             }
             if (expr.includes("'") || expr.includes('"')) isString = true;
             expr = eval(expr);
-            if (!isString && !isNaN(expr) && !isNaN(Number(expr)) || expr.toUpperCase() === 'TRUE' || expr.toUpperCase() === 'FALSE') {
+            if (!isString && !isNaN(expr) && !isNaN(Number(expr)) || expr.toString().toUpperCase() === 'TRUE' || expr.toString().toUpperCase() === 'FALSE') {
                 if (topFlag) this.currentExpression = undefined;
                 return expr;
             }
