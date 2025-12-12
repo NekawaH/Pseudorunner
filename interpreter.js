@@ -1076,9 +1076,9 @@ class PseudoInterpreter {
                         ifLine = ["IF", `${caseExpression} == ${caseLine[1]}`];
                         ifLine[114514] = caseLine[114514];
                         parsedLines.push(ifLine);
-                        inLine = this.tokenize(caseLine[3].toString().trim());
+                        inLine = this.tokenize(caseLine[2].toString().trim());
                         inLine[114514] = caseLine[114514];
-                        if (caseLine[3].toString().trim()) parsedLines.push(inLine); 
+                        if (caseLine[2].toString().trim()) parsedLines.push(inLine); 
                     } else {
                         parsedLines.push(caseLine); 
                     }
